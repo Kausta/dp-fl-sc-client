@@ -21,3 +21,13 @@ class RpcClient(communication_pb2_grpc.ClientServicer):
         updated_model, size = self.client.client_update([x.value for x in request])
         for w in updated_model:
             yield communication_pb2.ModelWeight(value = w, data_size = size)
+    
+    def ReceiveContribution(self, request, ctx):
+        contributor_id = request.contributor_id
+        contribution = request.contribution
+        self.client.receive_contribution(contributor_id, contribution)
+        return communication_pb2.Ack(result=1)
+    
+    def Setup(self, request, ctx):
+        self.client.setup()
+        return communication_pb2.Ack(result=1)

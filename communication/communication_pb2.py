@@ -19,10 +19,56 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n!communication/communication.proto\"/\n\x0bModelWeight\x12\x11\n\tdata_size\x18\x01 \x01(\x05\x12\r\n\x05value\x18\x02 \x01(\x02\".\n\x0fPublicParameter\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x05\"\'\n\rClientAddress\x12\x16\n\x0e\x63lient_address\x18\x01 \x01(\t\">\n\x11\x43lientInformation\x12\x11\n\tclient_id\x18\x01 \x01(\x05\x12\x16\n\x0e\x63lient_address\x18\x02 \x01(\t\"L\n\tPublicKey\x12\x14\n\x0cowner_client\x18\x01 \x01(\x05\x12\x15\n\rtarget_client\x18\x02 \x01(\x05\x12\x12\n\npublic_key\x18\x03 \x01(\x03\"\t\n\x07VoidMsg\"\x15\n\x03\x41\x63k\x12\x0e\n\x06result\x18\x01 \x01(\x08\x32\x8d\x01\n\x06\x43lient\x12\'\n\tNewClient\x12\x12.ClientInformation\x1a\x04.Ack\"\x00\x12(\n\nInitialize\x12\x10.PublicParameter\x1a\x04.Ack\"\x00(\x01\x12\x30\n\x0c\x43lientUpdate\x12\x0c.ModelWeight\x1a\x0c.ModelWeight\"\x00(\x01\x30\x01\x32t\n\x06Server\x12\x36\n\x0eRegisterClient\x12\x0e.ClientAddress\x1a\x12.ClientInformation\"\x00\x12\x32\n\x0eReceiveClients\x12\x08.VoidMsg\x1a\x12.ClientInformation\"\x00\x30\x01\x62\x06proto3'
+  serialized_pb=b'\n!communication/communication.proto\"O\n\x0c\x43ontribution\x12\x16\n\x0e\x63ontributor_id\x18\x01 \x01(\x05\x12\x11\n\ttarget_id\x18\x02 \x01(\x05\x12\x14\n\x0c\x63ontribution\x18\x03 \x01(\t\"/\n\x0bModelWeight\x12\x11\n\tdata_size\x18\x01 \x01(\x05\x12\r\n\x05value\x18\x02 \x01(\x02\".\n\x0fPublicParameter\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x05\"\'\n\rClientAddress\x12\x16\n\x0e\x63lient_address\x18\x01 \x01(\t\">\n\x11\x43lientInformation\x12\x11\n\tclient_id\x18\x01 \x01(\x05\x12\x16\n\x0e\x63lient_address\x18\x02 \x01(\t\"L\n\tPublicKey\x12\x14\n\x0cowner_client\x18\x01 \x01(\x05\x12\x15\n\rtarget_client\x18\x02 \x01(\x05\x12\x12\n\npublic_key\x18\x03 \x01(\x03\"\t\n\x07VoidMsg\"\x15\n\x03\x41\x63k\x12\x0e\n\x06result\x18\x01 \x01(\x08\x32\xd6\x01\n\x06\x43lient\x12\'\n\tNewClient\x12\x12.ClientInformation\x1a\x04.Ack\"\x00\x12(\n\nInitialize\x12\x10.PublicParameter\x1a\x04.Ack\"\x00(\x01\x12,\n\x13ReceiveContribution\x12\r.Contribution\x1a\x04.Ack\"\x00\x12\x30\n\x0c\x43lientUpdate\x12\x0c.ModelWeight\x1a\x0c.ModelWeight\"\x00(\x01\x30\x01\x12\x19\n\x05Setup\x12\x08.VoidMsg\x1a\x04.Ack\"\x00\x32\xa5\x01\n\x06Server\x12\x36\n\x0eRegisterClient\x12\x0e.ClientAddress\x1a\x12.ClientInformation\"\x00\x12\x32\n\x0eReceiveClients\x12\x08.VoidMsg\x1a\x12.ClientInformation\"\x00\x30\x01\x12/\n\x14\x46orwardContributions\x12\r.Contribution\x1a\x04.Ack\"\x00(\x01\x62\x06proto3'
 )
 
 
+
+
+_CONTRIBUTION = _descriptor.Descriptor(
+  name='Contribution',
+  full_name='Contribution',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='contributor_id', full_name='Contribution.contributor_id', index=0,
+      number=1, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='target_id', full_name='Contribution.target_id', index=1,
+      number=2, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='contribution', full_name='Contribution.contribution', index=2,
+      number=3, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=37,
+  serialized_end=116,
+)
 
 
 _MODELWEIGHT = _descriptor.Descriptor(
@@ -59,8 +105,8 @@ _MODELWEIGHT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=37,
-  serialized_end=84,
+  serialized_start=118,
+  serialized_end=165,
 )
 
 
@@ -98,8 +144,8 @@ _PUBLICPARAMETER = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=86,
-  serialized_end=132,
+  serialized_start=167,
+  serialized_end=213,
 )
 
 
@@ -130,8 +176,8 @@ _CLIENTADDRESS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=134,
-  serialized_end=173,
+  serialized_start=215,
+  serialized_end=254,
 )
 
 
@@ -169,8 +215,8 @@ _CLIENTINFORMATION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=175,
-  serialized_end=237,
+  serialized_start=256,
+  serialized_end=318,
 )
 
 
@@ -215,8 +261,8 @@ _PUBLICKEY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=239,
-  serialized_end=315,
+  serialized_start=320,
+  serialized_end=396,
 )
 
 
@@ -240,8 +286,8 @@ _VOIDMSG = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=317,
-  serialized_end=326,
+  serialized_start=398,
+  serialized_end=407,
 )
 
 
@@ -272,10 +318,11 @@ _ACK = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=328,
-  serialized_end=349,
+  serialized_start=409,
+  serialized_end=430,
 )
 
+DESCRIPTOR.message_types_by_name['Contribution'] = _CONTRIBUTION
 DESCRIPTOR.message_types_by_name['ModelWeight'] = _MODELWEIGHT
 DESCRIPTOR.message_types_by_name['PublicParameter'] = _PUBLICPARAMETER
 DESCRIPTOR.message_types_by_name['ClientAddress'] = _CLIENTADDRESS
@@ -284,6 +331,13 @@ DESCRIPTOR.message_types_by_name['PublicKey'] = _PUBLICKEY
 DESCRIPTOR.message_types_by_name['VoidMsg'] = _VOIDMSG
 DESCRIPTOR.message_types_by_name['Ack'] = _ACK
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
+
+Contribution = _reflection.GeneratedProtocolMessageType('Contribution', (_message.Message,), {
+  'DESCRIPTOR' : _CONTRIBUTION,
+  '__module__' : 'communication.communication_pb2'
+  # @@protoc_insertion_point(class_scope:Contribution)
+  })
+_sym_db.RegisterMessage(Contribution)
 
 ModelWeight = _reflection.GeneratedProtocolMessageType('ModelWeight', (_message.Message,), {
   'DESCRIPTOR' : _MODELWEIGHT,
@@ -343,8 +397,8 @@ _CLIENT = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_start=352,
-  serialized_end=493,
+  serialized_start=433,
+  serialized_end=647,
   methods=[
   _descriptor.MethodDescriptor(
     name='NewClient',
@@ -367,12 +421,32 @@ _CLIENT = _descriptor.ServiceDescriptor(
     create_key=_descriptor._internal_create_key,
   ),
   _descriptor.MethodDescriptor(
+    name='ReceiveContribution',
+    full_name='Client.ReceiveContribution',
+    index=2,
+    containing_service=None,
+    input_type=_CONTRIBUTION,
+    output_type=_ACK,
+    serialized_options=None,
+    create_key=_descriptor._internal_create_key,
+  ),
+  _descriptor.MethodDescriptor(
     name='ClientUpdate',
     full_name='Client.ClientUpdate',
-    index=2,
+    index=3,
     containing_service=None,
     input_type=_MODELWEIGHT,
     output_type=_MODELWEIGHT,
+    serialized_options=None,
+    create_key=_descriptor._internal_create_key,
+  ),
+  _descriptor.MethodDescriptor(
+    name='Setup',
+    full_name='Client.Setup',
+    index=4,
+    containing_service=None,
+    input_type=_VOIDMSG,
+    output_type=_ACK,
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
   ),
@@ -389,8 +463,8 @@ _SERVER = _descriptor.ServiceDescriptor(
   index=1,
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_start=495,
-  serialized_end=611,
+  serialized_start=650,
+  serialized_end=815,
   methods=[
   _descriptor.MethodDescriptor(
     name='RegisterClient',
@@ -409,6 +483,16 @@ _SERVER = _descriptor.ServiceDescriptor(
     containing_service=None,
     input_type=_VOIDMSG,
     output_type=_CLIENTINFORMATION,
+    serialized_options=None,
+    create_key=_descriptor._internal_create_key,
+  ),
+  _descriptor.MethodDescriptor(
+    name='ForwardContributions',
+    full_name='Server.ForwardContributions',
+    index=2,
+    containing_service=None,
+    input_type=_CONTRIBUTION,
+    output_type=_ACK,
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
   ),

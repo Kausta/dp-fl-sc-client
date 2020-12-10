@@ -22,6 +22,8 @@ class Server:
             elif user_input == "s":
                 for client_id, client_addr in self.clients.items():
                     print(str(client_id) + ": " + client_addr)
+            elif user_input == "se":
+                self.setup_all()
     
     def client_addresses(self):
         return self.clients.values()
@@ -49,6 +51,21 @@ class Server:
             ch = grpc.insecure_channel(clientaddr)
             sb = communication_pb2_grpc.ClientStub(ch)
             sb.Initialize(public_parameters.serialize_public_parameters(self.get_public_parameters()))
+    
+    # Requests all the clients to run the setup phase.    
+    def setup_all(self):
+        for client_id, client_addr in self.clients.items():
+            print("Setting up client", client_id)
+            ch = grpc.insecure_channel(client_addr)
+            sb = communication_pb2_grpc.ClientStub(ch)
+            sb.Setup(communication_pb2.VoidMsg())
+        print("Set up done.")
+    
+    def forward_contribution(self, target_id: int, contributor_id: int, contribution: str):
+        target_address = self.clients[target_id]
+        ch = grpc.insecure_channel(target_address)
+        sb = communication_pb2_grpc.ClientStub(ch)
+        sb.ReceiveContribution(communication_pb2.Contribution(target_id = target_id, contributor_id = contributor_id, contribution = contribution))
     
     def execute_round(self):
         import concurrent.futures

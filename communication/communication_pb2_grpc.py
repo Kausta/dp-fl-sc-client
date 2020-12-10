@@ -24,10 +24,20 @@ class ClientStub(object):
                 request_serializer=communication_dot_communication__pb2.PublicParameter.SerializeToString,
                 response_deserializer=communication_dot_communication__pb2.Ack.FromString,
                 )
+        self.ReceiveContribution = channel.unary_unary(
+                '/Client/ReceiveContribution',
+                request_serializer=communication_dot_communication__pb2.Contribution.SerializeToString,
+                response_deserializer=communication_dot_communication__pb2.Ack.FromString,
+                )
         self.ClientUpdate = channel.stream_stream(
                 '/Client/ClientUpdate',
                 request_serializer=communication_dot_communication__pb2.ModelWeight.SerializeToString,
                 response_deserializer=communication_dot_communication__pb2.ModelWeight.FromString,
+                )
+        self.Setup = channel.unary_unary(
+                '/Client/Setup',
+                request_serializer=communication_dot_communication__pb2.VoidMsg.SerializeToString,
+                response_deserializer=communication_dot_communication__pb2.Ack.FromString,
                 )
 
 
@@ -46,7 +56,19 @@ class ClientServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ReceiveContribution(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def ClientUpdate(self, request_iterator, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Setup(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -65,10 +87,20 @@ def add_ClientServicer_to_server(servicer, server):
                     request_deserializer=communication_dot_communication__pb2.PublicParameter.FromString,
                     response_serializer=communication_dot_communication__pb2.Ack.SerializeToString,
             ),
+            'ReceiveContribution': grpc.unary_unary_rpc_method_handler(
+                    servicer.ReceiveContribution,
+                    request_deserializer=communication_dot_communication__pb2.Contribution.FromString,
+                    response_serializer=communication_dot_communication__pb2.Ack.SerializeToString,
+            ),
             'ClientUpdate': grpc.stream_stream_rpc_method_handler(
                     servicer.ClientUpdate,
                     request_deserializer=communication_dot_communication__pb2.ModelWeight.FromString,
                     response_serializer=communication_dot_communication__pb2.ModelWeight.SerializeToString,
+            ),
+            'Setup': grpc.unary_unary_rpc_method_handler(
+                    servicer.Setup,
+                    request_deserializer=communication_dot_communication__pb2.VoidMsg.FromString,
+                    response_serializer=communication_dot_communication__pb2.Ack.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -115,6 +147,23 @@ class Client(object):
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
+    def ReceiveContribution(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/Client/ReceiveContribution',
+            communication_dot_communication__pb2.Contribution.SerializeToString,
+            communication_dot_communication__pb2.Ack.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
     def ClientUpdate(request_iterator,
             target,
             options=(),
@@ -128,6 +177,23 @@ class Client(object):
         return grpc.experimental.stream_stream(request_iterator, target, '/Client/ClientUpdate',
             communication_dot_communication__pb2.ModelWeight.SerializeToString,
             communication_dot_communication__pb2.ModelWeight.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def Setup(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/Client/Setup',
+            communication_dot_communication__pb2.VoidMsg.SerializeToString,
+            communication_dot_communication__pb2.Ack.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
@@ -151,6 +217,11 @@ class ServerStub(object):
                 request_serializer=communication_dot_communication__pb2.VoidMsg.SerializeToString,
                 response_deserializer=communication_dot_communication__pb2.ClientInformation.FromString,
                 )
+        self.ForwardContributions = channel.stream_unary(
+                '/Server/ForwardContributions',
+                request_serializer=communication_dot_communication__pb2.Contribution.SerializeToString,
+                response_deserializer=communication_dot_communication__pb2.Ack.FromString,
+                )
 
 
 class ServerServicer(object):
@@ -168,6 +239,12 @@ class ServerServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ForwardContributions(self, request_iterator, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_ServerServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -180,6 +257,11 @@ def add_ServerServicer_to_server(servicer, server):
                     servicer.ReceiveClients,
                     request_deserializer=communication_dot_communication__pb2.VoidMsg.FromString,
                     response_serializer=communication_dot_communication__pb2.ClientInformation.SerializeToString,
+            ),
+            'ForwardContributions': grpc.stream_unary_rpc_method_handler(
+                    servicer.ForwardContributions,
+                    request_deserializer=communication_dot_communication__pb2.Contribution.FromString,
+                    response_serializer=communication_dot_communication__pb2.Ack.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -222,5 +304,22 @@ class Server(object):
         return grpc.experimental.unary_stream(request, target, '/Server/ReceiveClients',
             communication_dot_communication__pb2.VoidMsg.SerializeToString,
             communication_dot_communication__pb2.ClientInformation.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def ForwardContributions(request_iterator,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.stream_unary(request_iterator, target, '/Server/ForwardContributions',
+            communication_dot_communication__pb2.Contribution.SerializeToString,
+            communication_dot_communication__pb2.Ack.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

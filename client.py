@@ -7,7 +7,7 @@ from communication import communication_pb2
 from communication import communication_pb2_grpc
 import public_parameters
 
-client_menu = "\n(s)how clients\n(q)uit"
+client_menu = "\n(s)how clients\nshow (p)airwise noises\n(q)uit"
 
 class Client:
     # The server RPC connection.
@@ -40,6 +40,9 @@ class Client:
             if user_input == "s":
                 for client_id, client_addr in self.clients.items():
                     print(str(client_id) + ": " + client_addr)
+            elif user_input == "p":
+                for client_id, shared_noise in self.fed_client.get_noise_map().items():
+                    print(str(client_id) + ": " + hex(shared_noise)[:10])
 
     # Registers with the server at the given address.
     def register(self):
@@ -57,17 +60,24 @@ class Client:
         print("Received client list of size", len(self.clients))
 
     # Called when a new client is joined to the system.
-    def new_client(self, new_client_id, new_client_addr):
+    def new_client(self, new_client_id: int, new_client_addr: str):
         print("\nNew client", new_client_addr, "joined with id", new_client_id)
         # Save the client.
         self.clients[new_client_id] = new_client_addr
     
     # Invoked by the server at the beginning of the setup phase.
     def setup(self):
-        self.fed_client.setup(self.clients)
+        print("\nSet up phase initiated...")
+        pub_keys = self.fed_client.setup(self.clients)
+        print("Forwarding contributions through the server...")
+        self.server_stub.ForwardContributions(public_parameters.serialize_contributions(pub_keys, self.client_info.client_id))
+        print("Forwarded contributions.")
+    
+    def receive_contribution(self, contributor_id: int, contribution: str):
+        self.fed_client.receive_contribution(contributor_id, contribution)
     
     # Invoked by the server at the beginning of the initialization phase.
-    def initialize(self, public_parameters):
+    def initialize(self, public_parameters: dict):
         print("\nInitializing the client...")
         print("Received public parameters:", public_parameters)
         self.fed_client.set_public_parameters(public_parameters)

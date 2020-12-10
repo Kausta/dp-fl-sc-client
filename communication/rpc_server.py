@@ -21,3 +21,8 @@ class RpcServer(communication_pb2_grpc.ServerServicer):
     def ReceiveClients(self, request, ctx):
         for (i, clientaddr) in enumerate(self.server.client_addresses()):
             yield communication_pb2.ClientInformation(client_id=i, client_address=clientaddr)
+    
+    def ForwardContributions(self, request, ctx):
+        for contribution in request:
+            self.server.forward_contribution(contribution.target_id, contribution.contributor_id, contribution.contribution)
+        return communication_pb2.Ack(result = 1)
