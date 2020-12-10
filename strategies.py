@@ -34,6 +34,9 @@ class LaplaceDpFed(Strategy):
     def apply_update(self, update):
         self.dp_fed_step.update(update)
 
+    def test(self):
+        self.dp_fed_step.test()
+
 
 class HELaplaceDpFed(Strategy):
     def __init__(self, dp_fed_step: DpFedStep, laplace_step: LaplaceMechanismStep, he_encrypt_step: HEEncryptStep,
@@ -55,3 +58,6 @@ class HELaplaceDpFed(Strategy):
     def apply_update(self, update):
         update = self.he_decrypt_step.decrypt(update)
         self.dp_fed_step.update(update)
+
+    def test(self):
+        self.dp_fed_step.test()

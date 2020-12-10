@@ -31,7 +31,7 @@ class DpFedModel(torch.nn.Module):
         """
         Calculate loss using the model
         """
-        loss = self.layer(X)
+        loss = self.model(X.view(X.shape[0], -1))
         return loss
 
     def flatten(self):
@@ -40,7 +40,7 @@ class DpFedModel(torch.nn.Module):
         """
         all_params = np.array([])
 
-        for key, value in self.layer.state_dict().items():
+        for key, value in self.model.state_dict().items():
             param = value.cpu().detach().numpy().flatten()
             all_params = np.append(all_params, param)
 
@@ -54,4 +54,4 @@ class DpFedModel(torch.nn.Module):
         :return:
         """
         index = 0
-        index = unflatten_block(self.layer, 0, weights, self.device)
+        index = unflatten_block(self.model, 0, weights, self.device)
