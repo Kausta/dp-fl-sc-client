@@ -16,3 +16,7 @@ class MnistMLP(DpFedModel):
             nn.LogSoftmax(dim=1)
         )
         super(MnistMLP, self).__init__(layer, device)
+
+    def forward(self, X):
+        loss = self.model(X.view(X.shape[0], -1))
+        return loss

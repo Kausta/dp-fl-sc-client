@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 
+
 def unflatten_block(block, index, weights, device):
     """
     Unflatten the given block into the model at specified index and transfer to the device
@@ -31,7 +32,7 @@ class DpFedModel(torch.nn.Module):
         """
         Calculate loss using the model
         """
-        loss = self.model(X.view(X.shape[0], -1))
+        loss = self.model(X)
         return loss
 
     def flatten(self):
