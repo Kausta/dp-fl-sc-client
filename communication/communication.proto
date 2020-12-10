@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+service Client {
+    rpc NewClient(ClientInformation) returns (Ack) {}
+    rpc Initialize(stream PublicParameter) returns (Ack) {}
+    rpc ClientUpdate(stream ModelWeight) returns (stream ModelWeight) {}
+}
+
+service Server {
+    rpc RegisterClient(ClientAddress) returns (ClientInformation) {}
+    rpc ReceiveClients(VoidMsg) returns (stream ClientInformation) {}
+}
+
+message ModelWeight {
+    int32 data_size = 1;
+    float value = 2;
+}
+
+message PublicParameter {
+    string name = 1;
+    int32 value = 2;
+}
+
+message ClientAddress {
+    string client_address = 1;
+}
+
+message ClientInformation {
+    int32 client_id = 1;
+    string client_address = 2;
+}
+
+message PublicKey {
+    int32 owner_client = 1;
+    int32 target_client = 2;
+    int64 public_key = 3;
+}
+
+message VoidMsg {}
+
+message Ack {
+    bool result = 1;
+}
