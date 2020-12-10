@@ -86,6 +86,7 @@ class DiffieHellman:
 		# calculate the shared key G^ab mod p
 		if self.check_other_public_key(other_contribution):
 			self.shared_key = pow(other_contribution, self.__a, self.p)
-			return hashlib.sha256(str(self.shared_key).encode()).hexdigest()
+			#return hashlib.sha256(str(self.shared_key).encode()).hexdigest()
+			return self.shared_key
 		else:
 			raise Exception("Bad public key from other party")

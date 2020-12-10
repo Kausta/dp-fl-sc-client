@@ -4,12 +4,25 @@ from concurrent import futures
 import grpc
 from communication import communication_pb2
 from communication import communication_pb2_grpc
-from communication import rpc_server
 import public_parameters
 
+server_menu = "\n(s)how the clients\n(i)nitialize\n(se)tup\n(r)un\n(q)uit"
+
 class Server:
+    # Maps all the client ids to their addresses.
     clients = {}
-        
+    
+    def run_interface(self):
+        user_input = ""
+        while user_input != "q":
+            print(server_menu)
+            user_input = input("Choose an option:")
+            if user_input == "i":
+                self.initializate_all()
+            elif user_input == "s":
+                for client_id, client_addr in self.clients.items():
+                    print(str(client_id) + ": " + client_addr)
+    
     def client_addresses(self):
         return self.clients.values()
     
@@ -28,7 +41,7 @@ class Server:
     
     # Returns the public parameters of the system as a dictionary.
     def get_public_parameters(self):
-        return {"group_desc": 14}
+        return {"system_size": len(self.clients), "epoch": 50, "group_desc": 14}
 
     # Requests all the clients to initialize themselves.
     def initializate_all(self):
@@ -57,29 +70,3 @@ class Server:
         data_size = updated_model[0].data_size
         print("Received weights", updated_weights, "with data size", data_size)
         return {"client_id": client_id, "updated_weights": updated_weights, "data_size": data_size}
-    
-def serve():
-    import sys
-    server = Server()
-    server_port = sys.argv[1] if len(sys.argv) > 1 else "8000"
-    print("Listening at", server_port)
-    s = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    communication_pb2_grpc.add_ServerServicer_to_server(rpc_server.RpcServer(server), s)
-    s.add_insecure_port("[::]:" + server_port)
-    s.start()
-    while True:
-        print("1. Show client list\n2. Initialize\n3. Execute one round")
-        userinput = int(input("Choose:"))
-        if userinput == 1:
-            print("Clients:")
-            for i, addr in server.clients.items():
-                print("\t", i, "=>", addr)
-        elif userinput == 2:
-            print("Initializing...")
-            server.initializate_all()
-        elif userinput == 3:
-            server.execute_round()
-    s.wait_for_termination()
-
-if __name__ == "__main__":
-    serve()

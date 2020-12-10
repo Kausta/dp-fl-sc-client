@@ -1,0 +1,2 @@
+class FedServer:
+    pass
