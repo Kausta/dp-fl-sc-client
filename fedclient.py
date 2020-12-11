@@ -15,7 +15,7 @@ class FedClient:
     initial_model = None
     client_id = None
 
-    weight = 1000
+    local_weight = 1000
     device = None
     dataset = None
     train_set = None
@@ -33,6 +33,7 @@ class FedClient:
         print("FedClient: Received public parameters", public_params)
         self.public_params = public_params
 
+    # Invoked during initialization (2).
     def load_data(self):
         print("FedClient: Loading data...")
         print("FedClient: Cuda:", torch.cuda.is_available())
@@ -57,14 +58,15 @@ class FedClient:
                                               ]))
         # Choose 1000 random data points as my local data (for now.)
         indices = list(range(len(self.train_set)))
-        my_indices = random.sample(indices, self.weight)
+        my_indices = random.sample(indices, self.local_weight)
         self.dataset = torch.utils.data.Subset(self.train_set, my_indices)
 
+    # Invoked during initialization (2).
     def load_learner(self):
         print("FedClient: Loading learner...")
         args = self.public_params
         # We assume each client has 1000 data points, for now!
-        total_weight = self.weight * args["system_size"]
+        total_weight = self.local_weight * args["system_size"]
         batch_size_train = args['batch_size']
         batch_size_test = args['batch_size']
         self.train_loader = torch.utils.data.DataLoader(self.dataset, batch_size=batch_size_train, shuffle=True)
@@ -74,18 +76,20 @@ class FedClient:
         laplace_step = LaplaceMechanismStep(args['S'] / total_weight, args['epsilon'])
         self.strategy = LaplaceDpFed(trainer, laplace_step)
 
-    # Invoked during initialization (2). Initial model should be flattened.
+    # Invoked during initialization (3). Initial model should be flattened.
     def set_initial_model(self, initial_model):
         print("FedClient: Received initial model", initial_model)
         self.strategy.initialize(initial_model)
         print("FedClient: Initial model loaded.")
 
+    # Invoked at the beginning of a round.
     def calculate_update(self):
         print("FedClient: Calculating update...")
         update = self.strategy.calculate_update(self.public_params['local_epochs'])
         print("FedClient: Updated.")
-        return update, self.weight
+        return update, self.local_weight
 
+    # Invoked at the end of a round.
     def apply_update(self, global_update):
         print("FedClient: Applying global update...")
         self.strategy.apply_update(global_update)
