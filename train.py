@@ -17,6 +17,11 @@ def flat_clip(vec, S):
     return projection(vec, S)
 
 
+def per_layer_clip(layers, S):
+    S_layer = S / np.sqrt(len(layers))
+    return [projection(layer, S_layer) for layer in layers]
+
+
 class DpFedStep:
     def __init__(self, model: DpFedModel, train_loader, test_loader, lr, S):
         self.model = model
@@ -29,7 +34,7 @@ class DpFedStep:
 
         self.epoch = 0
 
-    def _train_epoch(self, initial_params):
+    def _train_epoch(self, initial_params, initial_layers):
         batch_time = AverageMeter()
         data_time = AverageMeter()
         losses = AverageMeter()
@@ -55,8 +60,17 @@ class DpFedStep:
             self.optimizer.step()
 
             # Clip the update from beginning of the step to now
-            updated_params = self.model.flatten()
-            self.model.unflatten(initial_params + flat_clip(updated_params - initial_params, self.S))
+
+            # # Flat
+            # updated_params = self.model.flatten()
+            # self.model.unflatten(initial_params + flat_clip(updated_params - initial_params, self.S))
+
+            # # Per Layer
+            updated_layers = self.model.get_layer_tensors()
+            diff = [x1 - x2 for x1, x2 in zip(updated_layers, initial_layers)]
+            clipped = per_layer_clip(diff, self.S)
+            new = [x1 + x2 for x1, x2 in zip(initial_layers, clipped)]
+            self.model.set_layer_tensors(new)
 
             batch_time.update(time.time() - end)
             end = time.time()
@@ -74,9 +88,10 @@ class DpFedStep:
 
     def train(self, epochs):
         initial_params = self.model.flatten()
+        initial_layers = self.model.get_layer_tensors(copy=True)
         for i in range(epochs):
             self.epoch += 1
-            self._train_epoch(initial_params)
+            self._train_epoch(initial_params, initial_layers)
 
         updated_params = self.model.flatten()
         # Model is updated based on global model, i.e, it will be updated in the update method
@@ -126,15 +141,17 @@ class DpFedStep:
                                                                 loss=losses),
                 flush=True
             )
-            print('Accuracy on the test dataset: {accuracy:.4f}%'.format(accuracy=100 * correct / total))
+            accuracy = correct / total
+            print('Accuracy on the test dataset: {accuracy:.4f}%'.format(accuracy=100 * accuracy))
+            return accuracy
 
 
 class LaplaceMechanismStep:
-    def __init__(self, S, epsilon):
-        self.S = S
+    def __init__(self, sensitivity, epsilon):
+        self.sensitivity = sensitivity
         self.epsilon = epsilon
 
-        self.lambda_ = S / epsilon
+        self.lambda_ = sensitivity / epsilon
 
     def _noise(self, shape):
         return np.random.laplace(loc=0.0, scale=self.lambda_, size=shape)

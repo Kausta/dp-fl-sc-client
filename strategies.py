@@ -35,7 +35,7 @@ class LaplaceDpFed(Strategy):
         self.dp_fed_step.update(update)
 
     def test(self):
-        self.dp_fed_step.test()
+        return self.dp_fed_step.test()
 
 
 class HELaplaceDpFed(Strategy):
@@ -60,4 +60,4 @@ class HELaplaceDpFed(Strategy):
         self.dp_fed_step.update(update)
 
     def test(self):
-        self.dp_fed_step.test()
+        return self.dp_fed_step.test()
