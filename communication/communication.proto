@@ -3,8 +3,10 @@ syntax = "proto3";
 service Client {
     rpc NewClient(ClientInformation) returns (Ack) {}
     rpc Initialize(stream PublicParameter) returns (Ack) {}
+    rpc InitializeModel(Model) returns (Ack) {}
     rpc ReceiveContribution(Contribution) returns (Ack) {}
-    rpc ClientUpdate(stream ModelWeight) returns (stream ModelWeight) {}
+    rpc ClientUpdate(VoidMsg) returns (Model) {}
+    rpc ClientApplyUpdate(Model) returns (Ack) {}
     rpc Setup(VoidMsg) returns (Ack) {}
 }
 
@@ -20,14 +22,15 @@ message Contribution {
     string contribution = 3;
 }
 
-message ModelWeight {
-    int32 data_size = 1;
-    float value = 2;
+message Model {
+    bytes data = 2;
 }
 
 message PublicParameter {
     string name = 1;
-    int32 value = 2;
+    int32 value_int = 2;
+    float value_float = 3;
+    string value_string = 4;
 }
 
 message ClientAddress {

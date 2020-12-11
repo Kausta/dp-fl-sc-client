@@ -1,4 +1,4 @@
-from communication import communication_pb2
+from communication import communication_pb2, helpers
 from communication import communication_pb2_grpc
 from server import Server
 
@@ -13,8 +13,7 @@ class RpcServer(communication_pb2_grpc.ServerServicer):
         return communication_pb2.ClientInformation(client_address=request.client_address, client_id=cid)
 
     def ReceivePublicParameters(self, request, ctx):
-        import public_parameters
-        params = public_parameters.serialize_public_parameters(self.server.public_parameters())
+        params = helpers.serialize_public_parameters(self.server.public_parameters())
         for p in params:
             yield p
 

@@ -1,57 +1,59 @@
-from pyDH import DiffieHellman
-from concurrent import futures
-
 import grpc
-from communication import communication_pb2
+from communication import communication_pb2, helpers
 from communication import communication_pb2_grpc
-import public_parameters
+import fedserver
 
 server_menu = "\n(s)how the clients\n(i)nitialize\n(se)tup\n(r)un\n(q)uit"
+
 
 class Server:
     # Maps all the client ids to their addresses.
     clients = {}
-    
+    fed_server = fedserver.FedServer()
+
     def run_interface(self):
         user_input = ""
         while user_input != "q":
             print(server_menu)
             user_input = input("Choose an option:")
             if user_input == "i":
-                self.initializate_all()
+                self.initialize_all()
             elif user_input == "s":
                 for client_id, client_addr in self.clients.items():
                     print(str(client_id) + ": " + client_addr)
             elif user_input == "se":
                 self.setup_all()
-    
+            elif user_input == "r":
+                self.execute_round()
+
     def client_addresses(self):
         return self.clients.values()
-    
+
     def register_client(self, new_addr):
         # Add the new client to the central list of clients.
         new_id = len(self.clients)
         self.clients[new_id] = new_addr
         print("Registering client with address", new_addr, "and with id", new_id)
         # Inform the other clients.
-        for clientaddr in filter(lambda x: x != new_addr, self.client_addresses()):
-            print("Informing client with address", clientaddr)
-            ch = grpc.insecure_channel(clientaddr)
+        for client_addr in filter(lambda x: x != new_addr, self.client_addresses()):
+            print("Informing client with address", client_addr)
+            ch = grpc.insecure_channel(client_addr)
             sb = communication_pb2_grpc.ClientStub(ch)
-            sb.NewClient(communication_pb2.ClientInformation(client_id = new_id, client_address = new_addr))
+            sb.NewClient(communication_pb2.ClientInformation(client_id=new_id, client_address=new_addr))
         return new_id
-    
-    # Returns the public parameters of the system as a dictionary.
-    def get_public_parameters(self):
-        return {"system_size": len(self.clients), "epoch": 50, "group_desc": 14}
 
     # Requests all the clients to initialize themselves.
-    def initializate_all(self):
-        for clientaddr in self.client_addresses():
-            ch = grpc.insecure_channel(clientaddr)
+    def initialize_all(self):
+        self.fed_server.set_clients(self.clients)
+        for client_addr in self.client_addresses():
+            ch = grpc.insecure_channel(client_addr)
             sb = communication_pb2_grpc.ClientStub(ch)
-            sb.Initialize(public_parameters.serialize_public_parameters(self.get_public_parameters()))
-    
+            # Send the public parameters and the initial model.
+            public_params = self.fed_server.get_public_parameters()
+            sb.Initialize(helpers.serialize_public_parameters(public_params))
+            init_model = self.fed_server.get_init_model_flattened()
+            sb.InitializeModel(helpers.serialize_model(init_model, -1))
+
     # Requests all the clients to run the setup phase.    
     def setup_all(self):
         for client_id, client_addr in self.clients.items():
@@ -60,30 +62,48 @@ class Server:
             sb = communication_pb2_grpc.ClientStub(ch)
             sb.Setup(communication_pb2.VoidMsg())
         print("Set up done.")
-    
+
     def forward_contribution(self, target_id: int, contributor_id: int, contribution: str):
         target_address = self.clients[target_id]
         ch = grpc.insecure_channel(target_address)
         sb = communication_pb2_grpc.ClientStub(ch)
-        sb.ReceiveContribution(communication_pb2.Contribution(target_id = target_id, contributor_id = contributor_id, contribution = contribution))
-    
+        sb.ReceiveContribution(communication_pb2.Contribution(target_id=target_id, contributor_id=contributor_id,
+                                                              contribution=contribution))
+
     def execute_round(self):
         import concurrent.futures
-        global_weights = [0.0, 0.3, 0.2, 0.8]
-        with concurrent.futures.ThreadPoolExecutor(max_workers=len(self.clients)) as exec:
-            future = [exec.submit(self.receive_from_client, client_id, global_weights) for client_id in self.clients.keys()]
+        # Get the updates from the client.
+        future = None
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(self.clients)) as executor:
+            future = [executor.submit(self.get_client_update, client_id) for client_id in self.clients.keys()]
         # Received all the results from the client!
+        updated_models = []
+        weights = []
+        # Collect all of the updates.
         for client_result in concurrent.futures.as_completed(future):
-            print(client_result.result())
+            updated_model, weight = client_result.result()
+            updated_models.append(updated_model)
+            weights.append(weight)
+        # Aggregate.
+        global_update = self.fed_server.aggregate(updated_models, weights)
+        # Update all.
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(self.clients)) as executor:
+            future = [executor.submit(self.apply_client_update, global_update, client_id) for client_id in self.clients.keys()]
+        for client_result in concurrent.futures.as_completed(future):
+            client_result.result()
+            print("Server: Updated client.")
 
-    def receive_from_client(self, client_id, global_weights):
-        print("Updating client", client_id, "with weights", global_weights)
+    def apply_client_update(self, global_update, client_id):
+        print("Server: Updating client", client_id)
         client_addr = self.clients[client_id]
         ch = grpc.insecure_channel(client_addr)
         sb = communication_pb2_grpc.ClientStub(ch)
-        updated_model_it = sb.ClientUpdate((communication_pb2.ModelWeight(data_size = -1, value = w) for w in global_weights))
-        updated_model = [x for x in updated_model_it]
-        updated_weights = [x.value for x in updated_model]
-        data_size = updated_model[0].data_size
-        print("Received weights", updated_weights, "with data size", data_size)
-        return {"client_id": client_id, "updated_weights": updated_weights, "data_size": data_size}
+        sb.ClientApplyUpdate(helpers.serialize_model(global_update, -1))
+
+    def get_client_update(self, client_id):
+        print("Server: Getting updates from client", client_id)
+        client_addr = self.clients[client_id]
+        ch = grpc.insecure_channel(client_addr)
+        sb = communication_pb2_grpc.ClientStub(ch)
+        updated_model, weight = helpers.parse_model(sb.ClientUpdate(communication_pb2.VoidMsg()))
+        return updated_model, weight
