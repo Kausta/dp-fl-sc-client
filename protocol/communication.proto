@@ -16,6 +16,7 @@ message RegisterResponse {
   float weight = 1;
   float total_weight = 2;
   Model model = 3;
+  string method = 4;
 }
 
 

@@ -8,6 +8,7 @@ from protocol import rpc_server
 
 from concurrent import futures
 import grpc
+
 import argparse
 
 server_menu = "\n(s)how the clients\n(r)un\n(q)uit"
@@ -16,17 +17,21 @@ server_menu = "\n(s)how the clients\n(r)un\n(q)uit"
 def parse_server_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type=int, default=8000, help="Listening port for the server.")
-    return parser.parse_args()
+    parser.add_argument('-m', '--method', default="dpfed", type=str)
+    args = parser.parse_args()
+    if args.method not in ('dpfed', 'he'):
+        parser.error(f"Incorrect strategy {args.method}")
+    return args.port, args.method
 
 
 def serve_server():
+    server_port, method = parse_server_args()
+    print("Using method", method)
+
     args = config.get_config()
     initial_model = MnistMLP()
-    server = rpc_server.Server(initial_model.flatten(), args)
-
-    args = parse_server_args()
-    server_port = args.port
-    s = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    server = rpc_server.Server(initial_model.flatten(), args, method)
+    s = grpc.server(futures.ThreadPoolExecutor(max_workers=10), options=config.grpc_options())
     communication_pb2_grpc.add_ServerServicer_to_server(rpc_server.RpcServer(server), s)
     s.add_insecure_port("[::]:" + str(server_port))
     s.start()

@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x1cprotocol/communication.proto\"=\n\x0fRegisterRequest\x12\x11\n\tclient_id\x18\x01 \x01(\x05\x12\x17\n\x0f\x63lient_data_len\x18\x02 \x01(\x05\"O\n\x10RegisterResponse\x12\x0e\n\x06weight\x18\x01 \x01(\x02\x12\x14\n\x0ctotal_weight\x18\x02 \x01(\x02\x12\x15\n\x05model\x18\x03 \x01(\x0b\x32\x06.Model\">\n\x17ShouldContributeRequest\x12\x11\n\tclient_id\x18\x01 \x01(\x05\x12\x10\n\x08last_acc\x18\x02 \x01(\x02\"@\n\x18ShouldContributeResponse\x12\x12\n\ncontribute\x18\x01 \x01(\x08\x12\x10\n\x08\x66inished\x18\x02 \x01(\x08\"?\n\x13\x43ommitUpdateRequest\x12\x11\n\tclient_id\x18\x01 \x01(\x05\x12\x15\n\x05model\x18\x02 \x01(\x0b\x32\x06.Model\"\x15\n\x05Model\x12\x0c\n\x04\x64\x61ta\x18\x01 \x01(\x0c\"\t\n\x07VoidMsg\"\x15\n\x03\x41\x63k\x12\x0e\n\x06result\x18\x01 \x01(\x08\x32\xe7\x01\n\x06Server\x12\x39\n\x0eRegisterClient\x12\x10.RegisterRequest\x1a\x11.RegisterResponse\"\x00\x30\x01\x12K\n\x10ShouldContribute\x12\x18.ShouldContributeRequest\x1a\x19.ShouldContributeResponse\"\x00\x30\x01\x12,\n\x0c\x43ommitUpdate\x12\x14.CommitUpdateRequest\x1a\x04.Ack\"\x00\x12\'\n\x0fGetGlobalUpdate\x12\x08.VoidMsg\x1a\x06.Model\"\x00\x30\x01\x62\x06proto3'
+  serialized_pb=b'\n\x1cprotocol/communication.proto\"=\n\x0fRegisterRequest\x12\x11\n\tclient_id\x18\x01 \x01(\x05\x12\x17\n\x0f\x63lient_data_len\x18\x02 \x01(\x05\"_\n\x10RegisterResponse\x12\x0e\n\x06weight\x18\x01 \x01(\x02\x12\x14\n\x0ctotal_weight\x18\x02 \x01(\x02\x12\x15\n\x05model\x18\x03 \x01(\x0b\x32\x06.Model\x12\x0e\n\x06method\x18\x04 \x01(\t\">\n\x17ShouldContributeRequest\x12\x11\n\tclient_id\x18\x01 \x01(\x05\x12\x10\n\x08last_acc\x18\x02 \x01(\x02\"@\n\x18ShouldContributeResponse\x12\x12\n\ncontribute\x18\x01 \x01(\x08\x12\x10\n\x08\x66inished\x18\x02 \x01(\x08\"?\n\x13\x43ommitUpdateRequest\x12\x11\n\tclient_id\x18\x01 \x01(\x05\x12\x15\n\x05model\x18\x02 \x01(\x0b\x32\x06.Model\"\x15\n\x05Model\x12\x0c\n\x04\x64\x61ta\x18\x01 \x01(\x0c\"\t\n\x07VoidMsg\"\x15\n\x03\x41\x63k\x12\x0e\n\x06result\x18\x01 \x01(\x08\x32\xe7\x01\n\x06Server\x12\x39\n\x0eRegisterClient\x12\x10.RegisterRequest\x1a\x11.RegisterResponse\"\x00\x30\x01\x12K\n\x10ShouldContribute\x12\x18.ShouldContributeRequest\x1a\x19.ShouldContributeResponse\"\x00\x30\x01\x12,\n\x0c\x43ommitUpdate\x12\x14.CommitUpdateRequest\x1a\x04.Ack\"\x00\x12\'\n\x0fGetGlobalUpdate\x12\x08.VoidMsg\x1a\x06.Model\"\x00\x30\x01\x62\x06proto3'
 )
 
 
@@ -93,6 +93,13 @@ _REGISTERRESPONSE = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='method', full_name='RegisterResponse.method', index=3,
+      number=4, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
   ],
   extensions=[
   ],
@@ -106,7 +113,7 @@ _REGISTERRESPONSE = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=95,
-  serialized_end=174,
+  serialized_end=190,
 )
 
 
@@ -144,8 +151,8 @@ _SHOULDCONTRIBUTEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=176,
-  serialized_end=238,
+  serialized_start=192,
+  serialized_end=254,
 )
 
 
@@ -183,8 +190,8 @@ _SHOULDCONTRIBUTERESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=240,
-  serialized_end=304,
+  serialized_start=256,
+  serialized_end=320,
 )
 
 
@@ -222,8 +229,8 @@ _COMMITUPDATEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=306,
-  serialized_end=369,
+  serialized_start=322,
+  serialized_end=385,
 )
 
 
@@ -254,8 +261,8 @@ _MODEL = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=371,
-  serialized_end=392,
+  serialized_start=387,
+  serialized_end=408,
 )
 
 
@@ -279,8 +286,8 @@ _VOIDMSG = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=394,
-  serialized_end=403,
+  serialized_start=410,
+  serialized_end=419,
 )
 
 
@@ -311,8 +318,8 @@ _ACK = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=405,
-  serialized_end=426,
+  serialized_start=421,
+  serialized_end=442,
 )
 
 _REGISTERRESPONSE.fields_by_name['model'].message_type = _MODEL
@@ -392,8 +399,8 @@ _SERVER = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_start=429,
-  serialized_end=660,
+  serialized_start=445,
+  serialized_end=676,
   methods=[
   _descriptor.MethodDescriptor(
     name='RegisterClient',

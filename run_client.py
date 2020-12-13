@@ -6,8 +6,10 @@ import config
 import grpc
 import argparse
 
+from fl_dp import key_util
+from fl_dp.he import HEEncryptStep, HEDecryptStep
 from fl_dp.models import MnistMLP
-from fl_dp.strategies import LaplaceDpFed
+from fl_dp.strategies import LaplaceDpFed, HELaplaceDpFed
 from fl_dp.train import DpFedStep, LaplaceMechanismStep
 from protocol import communication_pb2_grpc, communication_pb2 as pb2, util
 
@@ -20,10 +22,28 @@ def parse_client_args():
     return args.server, args.client_id
 
 
+def create_dpfed(loader, test_loader, args, total_weight, device):
+    model = MnistMLP(device)
+    trainer = DpFedStep(model, loader, test_loader, args['lr'], args['S'])
+    laplace_step = LaplaceMechanismStep(args['S'] / (args['q'] * total_weight), args['epsilon'])
+    strategy = LaplaceDpFed(trainer, laplace_step)
+    return strategy
+
+
+def create_he(loader, test_loader, args, weight, total_weight, device, private_key, factor_exp):
+    model = MnistMLP(device)
+    trainer = DpFedStep(model, loader, test_loader, args['lr'], args['S'])
+    laplace_step = LaplaceMechanismStep(args['S'] / (args['q'] * total_weight), args['epsilon'])
+    he_encrypt = HEEncryptStep(private_key, factor_exp, weight)
+    he_decrypt = HEDecryptStep(private_key, factor_exp, args['q'] * total_weight)
+    strategy = HELaplaceDpFed(trainer, laplace_step, he_encrypt, he_decrypt)
+    return strategy
+
+
 def serve_client():
     # Receive client arguments.
     server_addr, client_id = parse_client_args()
-    channel = grpc.insecure_channel(server_addr)
+    channel = grpc.insecure_channel(server_addr, options=config.grpc_options())
     server_stub = communication_pb2_grpc.ServerStub(channel)
 
     args = config.get_config()
@@ -36,15 +56,29 @@ def serve_client():
     response = server_stub.RegisterClient(pb2.RegisterRequest(client_id=client_id, client_data_len=len(train_set)))
     print("Waiting for initialization")
     response = next(response)
-    weight, total_weight, init_model = response.weight, response.total_weight, util.parse_np(response.model)
+    weight, total_weight, init_model, method = response.weight, response.total_weight, util.parse_np(
+        response.model), response.method
+    print("Using method", method)
     print(init_model)
     print(weight, total_weight)
 
-    device = torch.device("cpu")
-    model = MnistMLP(device)
-    trainer = DpFedStep(model, train_loader, test_loader, args['lr'], args['S'])
-    laplace_step = LaplaceMechanismStep(args['S'] / (args['q'] * total_weight), args['epsilon'])
-    strategy = LaplaceDpFed(trainer, laplace_step)
+    # This should work, although my computer with a 1660S wasn't able to train 10 models at the same time
+    # print("Cuda:", torch.cuda.is_available())
+    # if torch.cuda.is_available():
+    #    dev = "cuda:0"
+    # else:
+    #     dev = "cpu"
+    dev = "cpu"
+    print("Using device", dev)
+    device = torch.device(dev)
+    if method == "dpfed":
+        strategy = create_dpfed(train_loader, test_loader, args, total_weight, device)
+    elif method == "he":
+        private_key, public_key = key_util.read_key(args['key_path'])
+        strategy = create_he(train_loader, test_loader, args, weight, total_weight, device, private_key,
+                             args['factor_exp'])
+    else:
+        return
 
     strategy.initialize(init_model)
     acc = strategy.test()
