@@ -4,16 +4,17 @@ from grpc._cython.cygrpc import CompressionLevel
 
 def get_config():
     return {
-        'data_dir': "data/mnist/",
-        'key_path': 'test_key.pem',
-        'factor_exp': 8,
-        'lr': 0.01,
-        'S': 1,
-        'epsilon': 1,
-        'batch_size': 100,
-        'local_epochs': 5,
+        'data_dir': "data/mnist/",  # Data directory
+        'key_path': 'test_key.pem',  # HE test key
+        'factor_exp': 8,  # HE exponential factor for converting floats to integers
+        'lr': 0.01,  # Base learning rate
+        'S': 1,  # Sensitivity constant from DP-FedAvg
+        'epsilon': 1,  # Epsilon required for epsilon-differential privacy
+        'batch_size': 100,  # Local batch sizes
+        'local_epochs': 5,  # Local epochs per round
         'target_acc': 0.70,
-        'q': 1
+        'q': 1  # Fraction of clients joining in any round, 0 < q <= 1,
+                #   indicates probability of a client participating to a round
     }
 
 
