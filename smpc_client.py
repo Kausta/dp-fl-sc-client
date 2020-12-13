@@ -1,7 +1,7 @@
 import grpc
 import numpy
 
-import fedclient
+import smpc_fedclient
 from communication import communication_pb2, helpers
 from communication import communication_pb2_grpc
 
@@ -21,7 +21,7 @@ class Client:
     server_addr: str = None
 
     # Federated client.
-    fed_client = fedclient.FedClient()
+    fed_client = smpc_fedclient.FedClient()
 
     def __init__(self, self_addr, server_addr):
         self.self_addr = self_addr

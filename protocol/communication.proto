@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+service Server {
+  rpc RegisterClient(RegisterRequest) returns (stream RegisterResponse) {}
+  rpc ShouldContribute(ShouldContributeRequest) returns (stream ShouldContributeResponse) {}
+  rpc CommitUpdate(CommitUpdateRequest) returns (Ack) {}
+  rpc GetGlobalUpdate(VoidMsg) returns (stream Model) {}
+}
+
+message RegisterRequest {
+  int32 client_id = 1;
+  int32 client_data_len = 2;
+}
+
+message RegisterResponse {
+  float weight = 1;
+  float total_weight = 2;
+  Model model = 3;
+}
+
+
+message ShouldContributeRequest {
+  int32 client_id = 1;
+  float last_acc = 2;
+}
+message ShouldContributeResponse {
+  bool contribute = 1;
+  bool finished = 2;
+}
+
+message CommitUpdateRequest {
+  int32 client_id = 1;
+  Model model = 2;
+}
+
+message Model {
+  bytes data = 1;
+}
+message VoidMsg {}
+
+message Ack {
+  bool result = 1;
+}

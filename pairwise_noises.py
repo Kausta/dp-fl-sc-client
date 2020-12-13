@@ -1,6 +1,7 @@
 from pyDH import DiffieHellman, primes
 import random
 
+
 class PairwiseNoises:
     dh_instances: dict = None
     noise_map: dict = {}
@@ -28,7 +29,7 @@ class PairwiseNoises:
     def get_public_keys(self, clients: dict):
         public_keys = {client_id: self.dh_instances[client_id].gen_public_key() for client_id in clients.keys()}
         return public_keys
-    
+
     def receive_contribution(self, contributor_id: int, contribution: int):
         if contributor_id in self.noise_map:
             print("PairwiseNoises: Contribution from " + str(contributor_id) + " already received!")
@@ -42,12 +43,12 @@ class PairwiseNoises:
         # If we have calculated all possible noises, initialize the PRGs.
         if len(self.noise_map) == self.max_pairs:
             self.initialize_prgs()
-    
+
     def initialize_prgs(self):
         print("PairwiseNoises: Initializing PRGs...")
         self.prgs = {client_id: random.Random(shared_noise) for client_id, shared_noise in self.noise_map.items()}
         self.update_noises()
-    
+
     # Updates the noises.
     def update_noises(self):
         print("PairwiseNoises: Updating noises...")

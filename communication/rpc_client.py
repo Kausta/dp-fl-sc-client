@@ -1,6 +1,6 @@
 from communication import communication_pb2, helpers
 from communication import communication_pb2_grpc
-from client import Client
+from smpc_client import Client
 
 
 class RpcClient(communication_pb2_grpc.ClientServicer):

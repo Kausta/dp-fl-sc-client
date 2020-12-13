@@ -1,6 +1,6 @@
 from communication import communication_pb2, helpers
 from communication import communication_pb2_grpc
-from server import Server
+from smpc_server import Server
 
 class RpcServer(communication_pb2_grpc.ServerServicer):
     server = None

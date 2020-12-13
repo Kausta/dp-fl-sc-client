@@ -1,7 +1,7 @@
 import grpc
 from communication import communication_pb2, helpers
 from communication import communication_pb2_grpc
-import fedserver
+import smpc_fedserver
 
 server_menu = "\n(s)how the clients\n(i)nitialize\n(se)tup\n(r)un\n(q)uit"
 
@@ -9,7 +9,7 @@ server_menu = "\n(s)how the clients\n(i)nitialize\n(se)tup\n(r)un\n(q)uit"
 class Server:
     # Maps all the client ids to their addresses.
     clients = {}
-    fed_server = fedserver.FedServer()
+    fed_server = smpc_fedserver.FedServer()
 
     def run_interface(self):
         user_input = ""
@@ -88,7 +88,8 @@ class Server:
         global_update = self.fed_server.aggregate(updated_models, weights)
         # Update all.
         with concurrent.futures.ThreadPoolExecutor(max_workers=len(self.clients)) as executor:
-            future = [executor.submit(self.apply_client_update, global_update, client_id) for client_id in self.clients.keys()]
+            future = [executor.submit(self.apply_client_update, global_update, client_id) for client_id in
+                      self.clients.keys()]
         for client_result in concurrent.futures.as_completed(future):
             client_result.result()
             print("Server: Updated client.")

@@ -1,3 +1,5 @@
+import os
+
 import torch
 import torchvision
 from fl_dp.models import MnistMLP
@@ -44,22 +46,8 @@ class FedClient:
         print("FedClient: Using device", dev)
         self.device = torch.device(dev)
         # Load all the data and choose only a part of them (for now.)
-        self.train_set = torchvision.datasets.MNIST("data/mnist/", train=True, download=True,
-                                               transform=torchvision.transforms.Compose([
-                                                   torchvision.transforms.ToTensor(),
-                                                   torchvision.transforms.Normalize(
-                                                       (0.1307,), (0.3081,))
-                                               ]))
-        self.test_set = torchvision.datasets.MNIST("data/mnist/", train=False, download=True,
-                                              transform=torchvision.transforms.Compose([
-                                                  torchvision.transforms.ToTensor(),
-                                                  torchvision.transforms.Normalize(
-                                                      (0.1307,), (0.3081,))
-                                              ]))
-        # Choose 1000 random data points as my local data (for now.)
-        indices = list(range(len(self.train_set)))
-        my_indices = random.sample(indices, self.local_weight)
-        self.dataset = torch.utils.data.Subset(self.train_set, my_indices)
+        with open(os.path.join(self.public_params['data_dir'], f'client-{self.client_id}.pt'), 'rb') as f:
+            self.dataset, self.test_set = torch.load(f)
 
     # Invoked during initialization (2).
     def load_learner(self):
@@ -67,10 +55,8 @@ class FedClient:
         args = self.public_params
         # We assume each client has 1000 data points, for now!
         total_weight = self.local_weight * args["system_size"]
-        batch_size_train = args['batch_size']
-        batch_size_test = args['batch_size']
-        self.train_loader = torch.utils.data.DataLoader(self.dataset, batch_size=batch_size_train, shuffle=True)
-        self.test_loader = torch.utils.data.DataLoader(self.test_set, batch_size=batch_size_test, shuffle=True)
+        self.train_loader = torch.utils.data.DataLoader(self.dataset, batch_size= args['batch_size'], shuffle=True)
+        self.test_loader = torch.utils.data.DataLoader(self.test_set, batch_size= args['batch_size'], shuffle=True)
         model = MnistMLP(self.device)
         trainer = DpFedStep(model, self.train_loader, self.test_loader, args['lr'], args['S'])
         laplace_step = LaplaceMechanismStep(args['S'] / total_weight, args['epsilon'])

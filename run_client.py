@@ -1,29 +1,75 @@
-from client import Client
-from communication import communication_pb2_grpc, rpc_client
-from concurrent import futures
+import os
+from time import time
+
+import torch
+import config
 import grpc
 import argparse
 
+from fl_dp.models import MnistMLP
+from fl_dp.strategies import LaplaceDpFed
+from fl_dp.train import DpFedStep, LaplaceMechanismStep
+from protocol import communication_pb2_grpc, communication_pb2 as pb2, util
+
+
 def parse_client_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("port", type=int, help="Listening port for the client.")
-    parser.add_argument("-s", type=str, help="Server address.", default="localhost:8000")
-    parser.add_argument("-w", type=int, help="Number of workers.", default=10)
-    return parser.parse_args()
+    parser.add_argument("-s", "--server", type=str, help="Server address.", default="localhost:8000")
+    parser.add_argument("-c", "--client-id", type=int, help="Client id.")
+    args = parser.parse_args()
+    return args.server, args.client_id
+
 
 def serve_client():
     # Receive client arguments.
-    args = parse_client_args()
-    client_port = args.port
-    server_addr = args.s
-    client = Client("localhost:" + str(client_port), server_addr)
-    s = grpc.server(futures.ThreadPoolExecutor(max_workers = args.w))
-    communication_pb2_grpc.add_ClientServicer_to_server(rpc_client.RpcClient(client), s)
-    s.add_insecure_port("[::]:" + str(client_port))
-    s.start()
-    print("Client - Listening on", str(client_port))
-    # Start the client interface.
-    client.run_interface()
+    server_addr, client_id = parse_client_args()
+    channel = grpc.insecure_channel(server_addr)
+    server_stub = communication_pb2_grpc.ServerStub(channel)
+
+    args = config.get_config()
+
+    with open(os.path.join(args['data_dir'], f'client-{client_id}.pt'), 'rb') as f:
+        train_set, test_set = torch.load(f)
+    train_loader = torch.utils.data.DataLoader(train_set, batch_size=args['batch_size'], shuffle=True)
+    test_loader = torch.utils.data.DataLoader(test_set, batch_size=args['batch_size'], shuffle=True)
+
+    response = server_stub.RegisterClient(pb2.RegisterRequest(client_id=client_id, client_data_len=len(train_set)))
+    print("Waiting for initialization")
+    response = next(response)
+    weight, total_weight, init_model = response.weight, response.total_weight, util.parse_np(response.model)
+    print(init_model)
+    print(weight, total_weight)
+
+    device = torch.device("cpu")
+    model = MnistMLP(device)
+    trainer = DpFedStep(model, train_loader, test_loader, args['lr'], args['S'])
+    laplace_step = LaplaceMechanismStep(args['S'] / (args['q'] * total_weight), args['epsilon'])
+    strategy = LaplaceDpFed(trainer, laplace_step)
+
+    strategy.initialize(init_model)
+    acc = strategy.test()
+    comm_round = 0
+    while True:
+        comm_round += 1
+        print("Round", comm_round)
+
+        should_contribute = next(
+            server_stub.ShouldContribute(pb2.ShouldContributeRequest(client_id=client_id, last_acc=acc)))
+        if should_contribute.finished:
+            break
+        if should_contribute.contribute:
+            print("Chosen for training round")
+            update = strategy.calculate_update(args['local_epochs'])
+            server_stub.CommitUpdate(pb2.CommitUpdateRequest(client_id=client_id, model=util.serialize_np(update)))
+        else:
+            print("Not chosen for round")
+
+        update = next(server_stub.GetGlobalUpdate(pb2.VoidMsg()))
+        strategy.apply_update(util.parse_np(update))
+        acc = strategy.test()
+
+    print('Target accuracy', args['target_acc'], 'achieved at round', comm_round)
+
 
 if __name__ == "__main__":
     serve_client()
