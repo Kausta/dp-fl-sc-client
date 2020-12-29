@@ -9,8 +9,10 @@ import argparse
 from fl_dp import key_util
 from fl_dp.he import HEEncryptStep, HEDecryptStep
 from fl_dp.models import MnistMLP
-from fl_dp.strategies import LaplaceDpFed, HELaplaceDpFed
+from fl_dp.strategies import LaplaceDpFed, HELaplaceDpFed, MPCLaplaceDpFed
 from fl_dp.train import DpFedStep, LaplaceMechanismStep
+from mpc.mpc_step import MPCEncryptStep
+from mpc.pairwise_noises import PairwiseNoises
 from protocol import communication_pb2_grpc, communication_pb2 as pb2, util
 
 
@@ -39,6 +41,14 @@ def create_he(loader, test_loader, args, weight, total_weight, device, private_k
     strategy = HELaplaceDpFed(trainer, laplace_step, he_encrypt, he_decrypt)
     return strategy
 
+def create_smp(loader, test_loader, args, weight, total_weight, device, factor_exp, client_id):
+    model = MnistMLP(device)
+    trainer = DpFedStep(model, loader, test_loader, args['lr'], args['S'])
+    laplace_step = LaplaceMechanismStep(args['S'] / (args['q'] * total_weight), args['epsilon'])
+    mpc_encrypt_step = MPCEncryptStep(factor_exp, weight, client_id)
+    strategy = MPCLaplaceDpFed(trainer, laplace_step, mpc_encrypt_step)
+    return strategy
+
 
 def serve_client():
     # Receive client arguments.
@@ -56,8 +66,8 @@ def serve_client():
     response = server_stub.RegisterClient(pb2.RegisterRequest(client_id=client_id, client_data_len=len(train_set)))
     print("Waiting for initialization")
     response = next(response)
-    weight, total_weight, init_model, method = response.weight, response.total_weight, util.parse_np(
-        response.model), response.method
+    weight, total_weight, init_model, method, system_size = response.weight, response.total_weight, util.parse_np(
+        response.model), response.method, response.system_size
     print("Using method", method)
     print(init_model)
     print(weight, total_weight)
@@ -77,8 +87,32 @@ def serve_client():
         private_key, public_key = key_util.read_key(args['key_path'])
         strategy = create_he(train_loader, test_loader, args, weight, total_weight, device, private_key,
                              args['factor_exp'])
+    elif method == "mpc":
+        strategy = create_smp(train_loader, test_loader, args, weight, total_weight, device, args['factor_exp'],
+                              client_id)
     else:
         return
+
+    # Construct the pairwise noises
+    if method == "mpc":
+        pn = PairwiseNoises()
+        print("Generating private keys...")
+        # Create a list of all the client ids.
+        client_ids = list(range(system_size))
+        client_ids.remove(client_id)
+        pn.generate_private_keys(14, client_ids)
+        public_keys = pn.get_public_keys(client_ids)
+        print("Sending noise contributions...")
+        cont_iterator = map(lambda target_id, cont: pb2.NoiseContribution(contributor_id=client_id,
+                                                                          target_id=target_id,
+                                                                          contribution=hex(cont)), public_keys.items())
+        received_contributions = server_stub.ForwardNoiseContributions(cont_iterator)
+        print("Received noise contributions.")
+        # Save the contributions.
+        for cont in received_contributions:
+            pn.receive_contribution(cont.contributor_id, int(cont.contribution, 16))
+        # Save the pairwise noises to the strategy.
+        strategy.mpc_encrypt_step.set_pairwise_noise_generator(pn)
 
     strategy.initialize(init_model)
     acc = strategy.test()

@@ -1,4 +1,4 @@
-from pyDH import DiffieHellman, primes
+from mpc.pyDH import DiffieHellman, primes
 import random
 
 
@@ -12,11 +12,10 @@ class PairwiseNoises:
     p = None
     max_pairs: int = 0
 
-    # Invoked by FedClient during setup.
-    def generate_private_keys(self, group_desc: int, clients: dict):
-        self.max_pairs = len(clients)
+    def generate_private_keys(self, group_desc: int, client_ids: list):
+        self.max_pairs = len(client_ids)
         # Create Diffie Hellman instances for every other client.
-        self.dh_instances = {client_id: DiffieHellman(group_desc) for client_id in clients.keys()}
+        self.dh_instances = {client_id: DiffieHellman(group_desc) for client_id in client_ids}
         # Set the prime.
         self.p = primes[group_desc]["prime"]
         # Now, consume the unassigned contributions.
@@ -25,9 +24,8 @@ class PairwiseNoises:
         # Clear the unassigned contributions.
         self.unassigned_contributions = {}
 
-    # Invoked by FedClient during setup.
-    def get_public_keys(self, clients: dict):
-        public_keys = {client_id: self.dh_instances[client_id].gen_public_key() for client_id in clients.keys()}
+    def get_public_keys(self, client_ids: list):
+        public_keys = {client_id: self.dh_instances[client_id].gen_public_key() for client_id in client_ids}
         return public_keys
 
     def receive_contribution(self, contributor_id: int, contribution: int):

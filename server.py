@@ -9,13 +9,16 @@ def choose_randomly(arr, p):
 
 
 class Server:
-    def __init__(self, initial_model, args, method):
+    def __init__(self, initial_model, args, method, system_size):
         self.initial_model = initial_model
         self.args = args
         self.method = method
+        self.system_size = system_size
         self.client_list = []
         self.weights = []
         self.total_weight = 0.0
+
+        self.noise_contributions = {}
 
         self.should_contribute_list = []
         self.contributors = []
@@ -29,6 +32,7 @@ class Server:
         self.lock = threading.RLock()
         self.cv = threading.Condition()
         self.register_wait_event = Event()
+        self.noise_contributions_event = Event()
         self.should_contribute_event = Event()
         self.get_global_update_event = Event()
 
@@ -39,6 +43,13 @@ class Server:
             self.total_weight = np.sum(self.weights)
             print("Server initialized weights to:", self.total_weight, self.weights)
         self.register_wait_event.notify()
+        if self.method == "mpc":
+            with self.cv:
+                print("Server is waiting for all the noise contributions.")
+                while len(self.noise_contributions) != len(self.client_list):
+                    self.cv.wait()
+            print("Server has received all the noise contributions.")
+            self.noise_contributions_event.notify()
         while True:
             with self.cv:
                 while len(self.should_contribute_list) != len(self.client_list):
@@ -74,6 +85,12 @@ class Server:
         with self.lock:
             self.client_list.append(client_id)
             self.weights.append(client_data_points)
+
+    def add_noise_contributions(self, contributor, noise_contributions):
+        with self.lock, self.cv:
+            print("Adding the contributions from", contributor)
+            self.noise_contributions[contributor] = noise_contributions
+            self.cv.notify()
 
     def add_should_contribute(self, client_id, last_acc):
         with self.lock, self.cv:

@@ -18,19 +18,20 @@ def parse_server_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type=int, default=8000, help="Listening port for the server.")
     parser.add_argument('-m', '--method', default="dpfed", type=str)
+    parser.add_argument("--size", type=int, default=8000, help="System size.")
     args = parser.parse_args()
-    if args.method not in ('dpfed', 'he'):
+    if args.method not in ('dpfed', 'he', 'mpc'):
         parser.error(f"Incorrect strategy {args.method}")
-    return args.port, args.method
+    return args.port, args.method, args.size
 
 
 def serve_server():
-    server_port, method = parse_server_args()
+    server_port, method, size = parse_server_args()
     print("Using method", method)
 
     args = config.get_config()
     initial_model = MnistMLP()
-    server = rpc_server.Server(initial_model.flatten(), args, method)
+    server = rpc_server.Server(initial_model.flatten(), args, method, size)
     s = grpc.server(futures.ThreadPoolExecutor(max_workers=10), options=config.grpc_options())
     communication_pb2_grpc.add_ServerServicer_to_server(rpc_server.RpcServer(server), s)
     s.add_insecure_port("[::]:" + str(server_port))

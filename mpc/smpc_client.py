@@ -1,5 +1,4 @@
 import grpc
-import numpy
 
 import smpc_fedclient
 from communication import communication_pb2, helpers

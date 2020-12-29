@@ -19,6 +19,11 @@ class ServerStub(object):
                 request_serializer=protocol_dot_communication__pb2.RegisterRequest.SerializeToString,
                 response_deserializer=protocol_dot_communication__pb2.RegisterResponse.FromString,
                 )
+        self.ForwardNoiseContributions = channel.stream_stream(
+                '/Server/ForwardNoiseContributions',
+                request_serializer=protocol_dot_communication__pb2.NoiseContribution.SerializeToString,
+                response_deserializer=protocol_dot_communication__pb2.NoiseContribution.FromString,
+                )
         self.ShouldContribute = channel.unary_stream(
                 '/Server/ShouldContribute',
                 request_serializer=protocol_dot_communication__pb2.ShouldContributeRequest.SerializeToString,
@@ -40,6 +45,12 @@ class ServerServicer(object):
     """Missing associated documentation comment in .proto file."""
 
     def RegisterClient(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ForwardNoiseContributions(self, request_iterator, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -70,6 +81,11 @@ def add_ServerServicer_to_server(servicer, server):
                     servicer.RegisterClient,
                     request_deserializer=protocol_dot_communication__pb2.RegisterRequest.FromString,
                     response_serializer=protocol_dot_communication__pb2.RegisterResponse.SerializeToString,
+            ),
+            'ForwardNoiseContributions': grpc.stream_stream_rpc_method_handler(
+                    servicer.ForwardNoiseContributions,
+                    request_deserializer=protocol_dot_communication__pb2.NoiseContribution.FromString,
+                    response_serializer=protocol_dot_communication__pb2.NoiseContribution.SerializeToString,
             ),
             'ShouldContribute': grpc.unary_stream_rpc_method_handler(
                     servicer.ShouldContribute,
@@ -110,6 +126,23 @@ class Server(object):
         return grpc.experimental.unary_stream(request, target, '/Server/RegisterClient',
             protocol_dot_communication__pb2.RegisterRequest.SerializeToString,
             protocol_dot_communication__pb2.RegisterResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def ForwardNoiseContributions(request_iterator,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.stream_stream(request_iterator, target, '/Server/ForwardNoiseContributions',
+            protocol_dot_communication__pb2.NoiseContribution.SerializeToString,
+            protocol_dot_communication__pb2.NoiseContribution.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
