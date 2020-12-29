@@ -77,8 +77,13 @@ class MPCLaplaceDpFed(Strategy):
         update = self.dp_fed_step.train(epochs)
         update = self.laplace_step.add_noise(update)
         update = self.mpc_encrypt_step.encrypt(update)
+        # Update the noises.
+        self.mpc_encrypt_step.pn.update_noises()
         return update
 
     def apply_update(self, update):
         self.dp_fed_step.update(update)
+
+    def test(self):
+        return self.dp_fed_step.test()
 

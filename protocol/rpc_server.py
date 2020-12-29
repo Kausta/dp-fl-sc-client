@@ -4,6 +4,7 @@ from protocol import communication_pb2 as pb2
 from protocol import communication_pb2_grpc as grpc
 from protocol.util import serialize_np, parse_np
 from server import Server
+from functools import reduce
 
 
 class RpcServer(grpc.ServerServicer):
@@ -32,7 +33,10 @@ class RpcServer(grpc.ServerServicer):
         self.server.add_noise_contributions(contributor_id, contributions)
         self.server.noise_contributions_event.wait()
         with self.server.lock:
-            for nc in filter(lambda c: c['target'] == contributor_id, self.server.noise_contributions.values()):
+            # Flat map
+            it = filter(lambda c: c['target'] == contributor_id,
+                        reduce(list.__add__, self.server.noise_contributions.values()))
+            for nc in it:
                 yield pb2.NoiseContribution(contributor_id=nc['contributor'],
                                             target_id=nc['target'],
                                             contribution=nc['contribution'])

@@ -14,7 +14,9 @@ class MPCEncryptStep:
         self.pn = pn
 
     def encrypt(self, update):
+        print("Encrypting...")
         update = self.weight * update
         update = (update * (10 ** self.factor_exp)).astype(np.int64)
-        update += self.pn.get_noise(self.id)
-        return update
+        noise = self.pn.get_noise(self.id)
+        res = update + noise
+        return res

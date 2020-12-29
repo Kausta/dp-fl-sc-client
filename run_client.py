@@ -41,6 +41,7 @@ def create_he(loader, test_loader, args, weight, total_weight, device, private_k
     strategy = HELaplaceDpFed(trainer, laplace_step, he_encrypt, he_decrypt)
     return strategy
 
+
 def create_smp(loader, test_loader, args, weight, total_weight, device, factor_exp, client_id):
     model = MnistMLP(device)
     trainer = DpFedStep(model, loader, test_loader, args['lr'], args['S'])
@@ -102,15 +103,18 @@ def serve_client():
         client_ids.remove(client_id)
         pn.generate_private_keys(14, client_ids)
         public_keys = pn.get_public_keys(client_ids)
-        print("Sending noise contributions...")
-        cont_iterator = map(lambda target_id, cont: pb2.NoiseContribution(contributor_id=client_id,
-                                                                          target_id=target_id,
-                                                                          contribution=hex(cont)), public_keys.items())
+        print("Sending noise contributions from client", client_id)
+        cont_iterator = map(lambda target_id: pb2.NoiseContribution(contributor_id=client_id,
+                                                                    target_id=target_id,
+                                                                    contribution=hex(public_keys[target_id])),
+                            public_keys)
         received_contributions = server_stub.ForwardNoiseContributions(cont_iterator)
         print("Received noise contributions.")
         # Save the contributions.
         for cont in received_contributions:
             pn.receive_contribution(cont.contributor_id, int(cont.contribution, 16))
+        # Initialize PRGs
+        pn.initialize_prgs()
         # Save the pairwise noises to the strategy.
         strategy.mpc_encrypt_step.set_pairwise_noise_generator(pn)
 

@@ -29,6 +29,7 @@ class PairwiseNoises:
         return public_keys
 
     def receive_contribution(self, contributor_id: int, contribution: int):
+        print("PairwiseNoises: Received contribution from", contributor_id)
         if contributor_id in self.noise_map:
             print("PairwiseNoises: Contribution from " + str(contributor_id) + " already received!")
         # If the private keys are not yet generated, save the contribution.
@@ -38,9 +39,6 @@ class PairwiseNoises:
             # If the private keys were generated, calculate the pairwise noise.
             dh = self.dh_instances[contributor_id]
             self.noise_map[contributor_id] = dh.gen_shared_key(contribution)
-        # If we have calculated all possible noises, initialize the PRGs.
-        if len(self.noise_map) == self.max_pairs:
-            self.initialize_prgs()
 
     def initialize_prgs(self):
         print("PairwiseNoises: Initializing PRGs...")
@@ -50,14 +48,16 @@ class PairwiseNoises:
     # Updates the noises.
     def update_noises(self):
         print("PairwiseNoises: Updating noises...")
-        for client_id in self.noise_map.keys():
+        for client_id in self.noise_map:
             self.noise_map[client_id] = self.prgs[client_id].randint(0, self.p)
+        for client_id, noise in self.noise_map.items():
+            print("\t", client_id, "=>", hex(noise)[0:5])
 
     def get_noise(self, self_id: int):
-        smaller_ids = filter(lambda k, v: k < self_id, self.noise_map.items())
-        larger_ids = filter(lambda k, v: k > self_id, self.noise_map.items())
-        neg_noises = map(lambda k, v: v, smaller_ids)
-        pos_noises = map(lambda k, v: v, larger_ids)
+        smaller_ids = filter(lambda k: k < self_id, self.noise_map)
+        larger_ids = filter(lambda k: k > self_id, self.noise_map)
+        neg_noises = map(lambda k: self.noise_map[k], smaller_ids)
+        pos_noises = map(lambda k: self.noise_map[k], larger_ids)
         acc = 0
         for n in pos_noises:
             acc = (acc + n) % self.p
