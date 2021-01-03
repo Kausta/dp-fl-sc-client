@@ -1,6 +1,7 @@
 import abc
 
 from fl_dp.he import HEEncryptStep, HEDecryptStep
+from fl_dp.paillier import PaillierEncryptStep, PaillierDecryptStep
 from fl_dp.train import DpFedStep, LaplaceMechanismStep
 
 
@@ -57,6 +58,32 @@ class HELaplaceDpFed(Strategy):
 
     def apply_update(self, update):
         update = self.he_decrypt_step.decrypt(update)
+        self.dp_fed_step.update(update)
+
+    def test(self):
+        return self.dp_fed_step.test()
+
+
+class PaillierLaplaceDpFed(Strategy):
+    def __init__(self, dp_fed_step: DpFedStep, laplace_step: LaplaceMechanismStep,
+                 paillier_encrypt_step: PaillierEncryptStep,
+                 paillier_decrypt_step: PaillierDecryptStep):
+        self.dp_fed_step = dp_fed_step
+        self.laplace_step = laplace_step
+        self.paillier_encrypt_step = paillier_encrypt_step
+        self.paillier_decrypt_step = paillier_decrypt_step
+
+    def initialize(self, init_params):
+        self.dp_fed_step.init(init_params)
+
+    def calculate_update(self, epochs):
+        update = self.dp_fed_step.train(epochs)
+        update = self.laplace_step.add_noise(update)
+        update = self.paillier_encrypt_step.encrypt(update)
+        return update
+
+    def apply_update(self, update):
+        update = self.paillier_decrypt_step.decrypt(update)
         self.dp_fed_step.update(update)
 
     def test(self):

@@ -19,7 +19,7 @@ def parse_server_args():
     parser.add_argument("--port", type=int, default=8000, help="Listening port for the server.")
     parser.add_argument('-m', '--method', default="dpfed", type=str)
     args = parser.parse_args()
-    if args.method not in ('dpfed', 'he'):
+    if args.method not in ('dpfed', 'he', 'paillier'):
         parser.error(f"Incorrect strategy {args.method}")
     return args.port, args.method
 

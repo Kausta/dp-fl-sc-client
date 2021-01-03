@@ -41,4 +41,4 @@ and the server can be closed by pressing `q`. Accuracy obtained after each round
 
 The configuration for the test (not including `C` number of clients from above) is currently contained in [config.py](./config.py), 
 and can be changed there, but it will be passed as program arguments in future. Different keys for HE other than the provided test key
-can be generated using [keygen.py](./keygen.py).
+can be generated using [keygen.py](./keygen.py)

@@ -19,7 +19,6 @@ class HEEncryptStep:
         self.factor_exp = factor_exp
 
     def encrypt(self, update):
-        update = self.weight * update
         update = (update * (10 ** self.factor_exp)).astype(np.int64)
 
         g_mu_p = update % self.p
@@ -28,8 +27,10 @@ class HEEncryptStep:
         # print((self.p_p_inv * modular_pow(g_mu_q, self.q, self.N)) % self.N)
         # print(((self.q_q_inv * modular_pow(g_mu_p, self.p, self.N)) % self.N + (
         #            self.p_p_inv * modular_pow(g_mu_q, self.q, self.N)) % self.N) % self.N)
+        # Bottom two equations are mathematically equivalent, also results are always equivalent with both
+        # However, the second one is computationally much less expensive
         # c_mu = ((self.q_q_inv * modular_pow(g_mu_p, self.p, self.N)) % self.N +
-        #        (self.p_p_inv * modular_pow(g_mu_q, self.q, self.N)) % self.N) % self.N
+        #         (self.p_p_inv * modular_pow(g_mu_q, self.q, self.N)) % self.N) % self.N
         c_mu = ((self.q_q_inv * g_mu_p) % self.N +
                 (self.p_p_inv * g_mu_q) % self.N) % self.N
 
@@ -59,7 +60,7 @@ class HEDecryptStep:
         g_add = ((self.m_p_q * g_add_p) % self.N +
                  (self.m_q_p * g_add_q) % self.N) % self.N
 
-        g_add[g_add > self.N / 2] -= self.N  # Convert negatives back
+        g_add[g_add > self.N // 2] -= self.N  # Convert negatives back
         g_add = (g_add.astype(np.float64) / (10 ** self.factor_exp))
         g_add = g_add / self.total_weight
         return g_add
@@ -69,6 +70,10 @@ def modular_pow(base, exponent, modulus):
     if modulus == 1:
         return np.zeros_like(base)
     result = np.ones_like(base, dtype=object)
-    for i in range(len(base)):
-        result[i] = pow(base[i], exponent, modulus)
+    base = base % modulus
+    while exponent > 0:
+        if exponent % 2 == 1:
+            result = (result * base) % modulus
+        exponent = exponent // 2
+        base = (base * base) % modulus
     return result

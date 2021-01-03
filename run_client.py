@@ -8,8 +8,9 @@ import argparse
 
 from fl_dp import key_util
 from fl_dp.he import HEEncryptStep, HEDecryptStep
+from fl_dp.paillier import PaillierEncryptStep, PaillierDecryptStep
 from fl_dp.models import MnistMLP
-from fl_dp.strategies import LaplaceDpFed, HELaplaceDpFed
+from fl_dp.strategies import LaplaceDpFed, HELaplaceDpFed, PaillierLaplaceDpFed
 from fl_dp.train import DpFedStep, LaplaceMechanismStep
 from protocol import communication_pb2_grpc, communication_pb2 as pb2, util
 
@@ -37,6 +38,16 @@ def create_he(loader, test_loader, args, weight, total_weight, device, private_k
     he_encrypt = HEEncryptStep(private_key, factor_exp, weight)
     he_decrypt = HEDecryptStep(private_key, factor_exp, args['q'] * total_weight)
     strategy = HELaplaceDpFed(trainer, laplace_step, he_encrypt, he_decrypt)
+    return strategy
+
+
+def create_paillier(loader, test_loader, args, total_weight, device, public_key, private_key):
+    model = MnistMLP(device)
+    trainer = DpFedStep(model, loader, test_loader, args['lr'], args['S'])
+    laplace_step = LaplaceMechanismStep(args['S'] / (args['q'] * total_weight), args['epsilon'])
+    paillier_encrypt = PaillierEncryptStep(public_key)
+    paillier_decrypt = PaillierDecryptStep(private_key)
+    strategy = PaillierLaplaceDpFed(trainer, laplace_step, paillier_encrypt, paillier_decrypt)
     return strategy
 
 
@@ -71,12 +82,16 @@ def serve_client():
     dev = "cpu"
     print("Using device", dev)
     device = torch.device(dev)
+
+    private_key, public_key = key_util.read_key(args['key_path'])
+
     if method == "dpfed":
         strategy = create_dpfed(train_loader, test_loader, args, total_weight, device)
     elif method == "he":
-        private_key, public_key = key_util.read_key(args['key_path'])
         strategy = create_he(train_loader, test_loader, args, weight, total_weight, device, private_key,
                              args['factor_exp'])
+    elif method == "paillier":
+        strategy = create_paillier(train_loader, test_loader, args, total_weight, device, public_key, private_key)
     else:
         return
 
@@ -94,11 +109,13 @@ def serve_client():
         if should_contribute.contribute:
             print("Chosen for training round")
             update = strategy.calculate_update(args['local_epochs'])
+            print("Sending update")
             server_stub.CommitUpdate(pb2.CommitUpdateRequest(client_id=client_id, model=util.serialize_np(update)))
         else:
             print("Not chosen for round")
 
         update = next(server_stub.GetGlobalUpdate(pb2.VoidMsg()))
+        print("Received update")
         strategy.apply_update(util.parse_np(update))
         acc = strategy.test()
 

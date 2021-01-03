@@ -1,24 +1,24 @@
 import numpy as np
 
-from fl_dp import he
+from fl_dp import paillier
 from fl_dp import key_util
 
 
 def main():
     private, public = key_util.read_key('test_key.pem')
-    enc = he.HEEncryptStep(private, 8, 1)
-    dec = he.HEDecryptStep(private, 8, 1)
+    enc = paillier.PaillierEncryptStep(public)
+    dec = paillier.PaillierDecryptStep(private)
 
     def test_singular(x):
         x = np.array(x, dtype=np.float64)
         print("Val:", x)
         enc_x = enc.encrypt(x)
-        print("Enc:", enc_x)
+        print("Enc:", enc_x[0].ciphertext())
         dec_x = dec.decrypt(enc_x)
         print("Dec:", dec_x)
         print("========")
 
-    test_singular([0])
+    test_singular([0] * 10000)
     test_singular([1])
     test_singular([-1])
     test_singular([0.5])

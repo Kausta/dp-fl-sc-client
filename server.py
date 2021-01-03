@@ -65,6 +65,8 @@ class Server:
                     self.update = self.average_dpfed()
                 elif self.method == "he":
                     self.update = self.average_he()
+                elif self.method == "paillier":
+                    self.update = self.average_dpfed()
             self.update_list = []
             self.updates = []
             self.contributors = []
