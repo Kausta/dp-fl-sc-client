@@ -67,8 +67,8 @@ def serve_client():
     response = server_stub.RegisterClient(pb2.RegisterRequest(client_id=client_id, client_data_len=len(train_set)))
     print("Waiting for initialization")
     response = next(response)
-    weight, total_weight, init_model, method, system_size = response.weight, response.total_weight, util.parse_np(
-        response.model), response.method, response.system_size
+    weight, total_weight, init_model, method = response.weight, response.total_weight, util.parse_np(
+        response.model), response.method
     print("Using method", method)
     print(init_model)
     print(weight, total_weight)
@@ -96,6 +96,10 @@ def serve_client():
 
     # Construct the pairwise noises
     if method == "mpc":
+        # First, receive the system size.
+        r = server_stub.GetSystemSize(pb2.VoidMsg())
+        system_size = r.system_size
+        print("Received system size", system_size)
         pn = PairwiseNoises()
         print("Generating private keys...")
         # Create a list of all the client ids.

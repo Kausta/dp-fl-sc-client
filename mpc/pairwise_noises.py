@@ -3,6 +3,7 @@ import random
 
 
 class PairwiseNoises:
+    noise_range = 100
     dh_instances: dict = None
     noise_map: dict = {}
     # Store the contributions that were received before the generation of private keys.
@@ -49,9 +50,9 @@ class PairwiseNoises:
     def update_noises(self):
         print("PairwiseNoises: Updating noises...")
         for client_id in self.noise_map:
-            self.noise_map[client_id] = self.prgs[client_id].randint(0, self.p)
+            self.noise_map[client_id] = self.prgs[client_id].randint(0, self.noise_range)
         for client_id, noise in self.noise_map.items():
-            print("\t", client_id, "=>", hex(noise)[0:5])
+            print("\t", client_id, "=>", noise)
 
     def get_noise(self, self_id: int):
         smaller_ids = filter(lambda k: k < self_id, self.noise_map)

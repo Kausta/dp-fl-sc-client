@@ -101,6 +101,7 @@ class DpFedStep:
         return updated_params - initial_params
 
     def update(self, update):
+        print(update)
         # Apply the given update
         self.model.unflatten(self.model.flatten() + update)
 

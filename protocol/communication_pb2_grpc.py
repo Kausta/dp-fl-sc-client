@@ -19,6 +19,11 @@ class ServerStub(object):
                 request_serializer=protocol_dot_communication__pb2.RegisterRequest.SerializeToString,
                 response_deserializer=protocol_dot_communication__pb2.RegisterResponse.FromString,
                 )
+        self.GetSystemSize = channel.unary_unary(
+                '/Server/GetSystemSize',
+                request_serializer=protocol_dot_communication__pb2.VoidMsg.SerializeToString,
+                response_deserializer=protocol_dot_communication__pb2.SystemSizeResponse.FromString,
+                )
         self.ForwardNoiseContributions = channel.stream_stream(
                 '/Server/ForwardNoiseContributions',
                 request_serializer=protocol_dot_communication__pb2.NoiseContribution.SerializeToString,
@@ -45,6 +50,12 @@ class ServerServicer(object):
     """Missing associated documentation comment in .proto file."""
 
     def RegisterClient(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetSystemSize(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -81,6 +92,11 @@ def add_ServerServicer_to_server(servicer, server):
                     servicer.RegisterClient,
                     request_deserializer=protocol_dot_communication__pb2.RegisterRequest.FromString,
                     response_serializer=protocol_dot_communication__pb2.RegisterResponse.SerializeToString,
+            ),
+            'GetSystemSize': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetSystemSize,
+                    request_deserializer=protocol_dot_communication__pb2.VoidMsg.FromString,
+                    response_serializer=protocol_dot_communication__pb2.SystemSizeResponse.SerializeToString,
             ),
             'ForwardNoiseContributions': grpc.stream_stream_rpc_method_handler(
                     servicer.ForwardNoiseContributions,
@@ -126,6 +142,23 @@ class Server(object):
         return grpc.experimental.unary_stream(request, target, '/Server/RegisterClient',
             protocol_dot_communication__pb2.RegisterRequest.SerializeToString,
             protocol_dot_communication__pb2.RegisterResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def GetSystemSize(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/Server/GetSystemSize',
+            protocol_dot_communication__pb2.VoidMsg.SerializeToString,
+            protocol_dot_communication__pb2.SystemSizeResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 

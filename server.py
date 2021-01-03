@@ -9,11 +9,11 @@ def choose_randomly(arr, p):
 
 
 class Server:
-    def __init__(self, initial_model, args, method, system_size):
+    def __init__(self, initial_model, args, method):
         self.initial_model = initial_model
         self.args = args
         self.method = method
-        self.system_size = system_size
+        self.system_size = 0
         self.client_list = []
         self.weights = []
         self.total_weight = 0.0
@@ -43,6 +43,8 @@ class Server:
             self.total_weight = np.sum(self.weights)
             print("Server initialized weights to:", self.total_weight, self.weights)
         self.register_wait_event.notify()
+        self.system_size = len(self.client_list)
+        # MPC specific initialization phase.
         if self.method == "mpc":
             with self.cv:
                 print("Server is waiting for all the noise contributions.")
@@ -50,7 +52,9 @@ class Server:
                     self.cv.wait()
             print("Server has received all the noise contributions.")
             self.noise_contributions_event.notify()
+        round = 1
         while True:
+            print("Determining round", round, "contributors...")
             with self.cv:
                 while len(self.should_contribute_list) != len(self.client_list):
                     self.cv.wait()
@@ -68,18 +72,23 @@ class Server:
             if self.finished:
                 print("Target accuracy reached")
                 break
+            print("Waiting for round", round, "contributions from the chosen clients...")
             with self.cv:
                 while len(self.update_list) != len(self.contributors):
                     self.cv.wait()
+            print("Aggregating...")
             with self.lock:
                 if self.method == "dpfed":
                     self.update = self.average_dpfed()
                 elif self.method == "he":
                     self.update = self.average_he()
+                elif self.method == "mpc":
+                    self.update = self.average_he()
             self.update_list = []
             self.updates = []
             self.contributors = []
             self.get_global_update_event.notify()
+            round += 1
 
     def add_client(self, client_id, client_data_points):
         with self.lock:
@@ -99,6 +108,7 @@ class Server:
             self.cv.notify()
 
     def add_update(self, client_id, update):
+        print(client_id, "adding update...")
         with self.lock, self.cv:
             if client_id in self.contributors:
                 self.update_list.append(client_id)
@@ -119,7 +129,6 @@ class Server:
         for local_update in self.updates:
             update = (update + local_update)
         return update
-
 
 class Event:
     def __init__(self):

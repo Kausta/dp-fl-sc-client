@@ -2,10 +2,15 @@ syntax = "proto3";
 
 service Server {
   rpc RegisterClient(RegisterRequest) returns (stream RegisterResponse) {}
+  rpc GetSystemSize(VoidMsg) returns (SystemSizeResponse) {}
   rpc ForwardNoiseContributions(stream NoiseContribution) returns (stream NoiseContribution) {}
   rpc ShouldContribute(ShouldContributeRequest) returns (stream ShouldContributeResponse) {}
   rpc CommitUpdate(CommitUpdateRequest) returns (Ack) {}
   rpc GetGlobalUpdate(VoidMsg) returns (stream Model) {}
+}
+
+message SystemSizeResponse {
+  int32 system_size = 1;
 }
 
 message NoiseContribution {
@@ -24,7 +29,6 @@ message RegisterResponse {
   float total_weight = 2;
   Model model = 3;
   string method = 4;
-  int32 system_size = 5;
 }
 
 message ShouldContributeRequest {

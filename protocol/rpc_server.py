@@ -19,9 +19,11 @@ class RpcServer(grpc.ServerServicer):
                 weight=self.server.weights[request.client_id],
                 total_weight=self.server.total_weight,
                 model=serialize_np(self.server.initial_model),
-                method=self.server.method,
-                system_size=self.server.system_size
+                method=self.server.method
             )
+
+    def GetSystemSize(self, request, context):
+        return pb2.SystemSizeResponse(system_size=self.server.system_size)
 
     def ForwardNoiseContributions(self, request_iterator, context):
         # Collect the noise contributions.
