@@ -3,7 +3,7 @@ import random
 
 
 class PairwiseNoises:
-    noise_range = 100
+    noise_range = 10**6
     dh_instances: dict = None
     noise_map: dict = {}
     # Store the contributions that were received before the generation of private keys.
@@ -61,7 +61,7 @@ class PairwiseNoises:
         pos_noises = map(lambda k: self.noise_map[k], larger_ids)
         acc = 0
         for n in pos_noises:
-            acc = (acc + n) % self.p
+            acc = (acc + n)
         for n in neg_noises:
-            acc = (acc - n) % self.p
+            acc = (acc - n)
         return acc

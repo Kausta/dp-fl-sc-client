@@ -46,7 +46,7 @@ def create_smp(loader, test_loader, args, weight, total_weight, device, factor_e
     model = MnistMLP(device)
     trainer = DpFedStep(model, loader, test_loader, args['lr'], args['S'])
     laplace_step = LaplaceMechanismStep(args['S'] / (args['q'] * total_weight), args['epsilon'])
-    mpc_encrypt_step = MPCEncryptStep(factor_exp, weight, client_id)
+    mpc_encrypt_step = MPCEncryptStep(factor_exp, weight, total_weight, client_id)
     strategy = MPCLaplaceDpFed(trainer, laplace_step, mpc_encrypt_step)
     return strategy
 
@@ -100,6 +100,7 @@ def serve_client():
         r = server_stub.GetSystemSize(pb2.VoidMsg())
         system_size = r.system_size
         print("Received system size", system_size)
+        strategy.set_system_size(system_size)
         pn = PairwiseNoises()
         print("Generating private keys...")
         # Create a list of all the client ids.
@@ -134,14 +135,19 @@ def serve_client():
         if should_contribute.finished:
             break
         if should_contribute.contribute:
-            print("Chosen for training round")
+            print("Chosen for training round. Training...")
             update = strategy.calculate_update(args['local_epochs'])
+            print("Trained. Committing the local encrypted update...")
             server_stub.CommitUpdate(pb2.CommitUpdateRequest(client_id=client_id, model=util.serialize_np(update)))
+            print("Committed.")
         else:
             print("Not chosen for round")
 
+        print("Waiting for the global model...")
         update = next(server_stub.GetGlobalUpdate(pb2.VoidMsg()))
+        print("Received global model.")
         strategy.apply_update(util.parse_np(update))
+        print("Testing global model...")
         acc = strategy.test()
 
     print('Target accuracy', args['target_acc'], 'achieved at round', comm_round)

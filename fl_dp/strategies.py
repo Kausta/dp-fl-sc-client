@@ -69,9 +69,13 @@ class MPCLaplaceDpFed(Strategy):
         self.dp_fed_step = dp_fed_step
         self.laplace_step = laplace_step
         self.mpc_encrypt_step = mpc_encrypt_step
+        self.system_size = 0
 
     def initialize(self, init_params):
         self.dp_fed_step.init(init_params)
+
+    def set_system_size(self, system_size):
+        self.system_size = system_size
 
     def calculate_update(self, epochs):
         update = self.dp_fed_step.train(epochs)
@@ -82,7 +86,10 @@ class MPCLaplaceDpFed(Strategy):
         return update
 
     def apply_update(self, update):
-        self.dp_fed_step.update(update)
+        print("Global update before decryption", update)
+        dec_update = self.mpc_encrypt_step.decrypt_global_update(update, self.system_size)
+        print("Global update after decryption", dec_update)
+        self.dp_fed_step.update(dec_update)
 
     def test(self):
         return self.dp_fed_step.test()

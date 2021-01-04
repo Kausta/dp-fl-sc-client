@@ -29,6 +29,8 @@ class Server:
         self.updates = []
         self.update = None
 
+        self.global_update_waiting_clients = 0
+
         self.lock = threading.RLock()
         self.cv = threading.Condition()
         self.register_wait_event = Event()
@@ -54,7 +56,7 @@ class Server:
             self.noise_contributions_event.notify()
         round = 1
         while True:
-            print("Determining round", round, "contributors...")
+            print("Waiting for all the clients to request round " + str(round) + "...")
             with self.cv:
                 while len(self.should_contribute_list) != len(self.client_list):
                     self.cv.wait()
@@ -83,11 +85,17 @@ class Server:
                 elif self.method == "he":
                     self.update = self.average_he()
                 elif self.method == "mpc":
-                    self.update = self.average_he()
+                    self.update = self.average_mpc()
             self.update_list = []
             self.updates = []
-            self.contributors = []
+            # Wait for all the clients to request the global model.
+            print("Waiting to distribute the global model...")
+            with self.cv:
+                while self.global_update_waiting_clients != len(self.contributors):
+                    self.cv.wait()
             self.get_global_update_event.notify()
+            self.contributors = []
+            self.global_update_waiting_clients = 0
             round += 1
 
     def add_client(self, client_id, client_data_points):
@@ -97,7 +105,6 @@ class Server:
 
     def add_noise_contributions(self, contributor, noise_contributions):
         with self.lock, self.cv:
-            print("Adding the contributions from", contributor)
             self.noise_contributions[contributor] = noise_contributions
             self.cv.notify()
 
@@ -105,6 +112,11 @@ class Server:
         with self.lock, self.cv:
             self.should_contribute_list.append(client_id)
             self.last_accs.append(last_acc)
+            self.cv.notify()
+
+    def add_wait_global_update(self):
+        with self.lock, self.cv:
+            self.global_update_waiting_clients += 1
             self.cv.notify()
 
     def add_update(self, client_id, update):
@@ -125,6 +137,12 @@ class Server:
         return update
 
     def average_he(self):
+        update = np.zeros_like(self.updates[0])
+        for local_update in self.updates:
+            update = (update + local_update)
+        return update
+
+    def average_mpc(self):
         update = np.zeros_like(self.updates[0])
         for local_update in self.updates:
             update = (update + local_update)

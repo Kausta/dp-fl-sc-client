@@ -58,6 +58,7 @@ class RpcServer(grpc.ServerServicer):
         return pb2.Ack(result=committed)
 
     def GetGlobalUpdate(self, request, context):
+        self.server.add_wait_global_update()
         self.server.get_global_update_event.wait()
         with self.server.lock:
             yield serialize_np(self.server.update)
