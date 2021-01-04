@@ -3,7 +3,6 @@ import torch.nn as nn
 import numpy as np
 
 
-
 class DpFedModel(torch.nn.Module):
     def __init__(self, model, device):
         super(DpFedModel, self).__init__()

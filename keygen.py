@@ -12,4 +12,3 @@ if __name__ == '__main__':
     key = RSA.generate(args.size)
     with open(args.path, 'wb') as f:
         f.write(key.export_key('PEM'))
-

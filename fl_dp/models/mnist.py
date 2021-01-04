@@ -1,10 +1,11 @@
+import torch
 import torch.nn as nn
 
-from dpfed_model import DpFedModel
+from fl_dp.dpfed_model import DpFedModel
 
 
 class MnistMLP(DpFedModel):
-    def __init__(self, device):
+    def __init__(self, device=torch.device("cpu")):
         layer = nn.Sequential(
             nn.Linear(784, 200),
             nn.ReLU(),

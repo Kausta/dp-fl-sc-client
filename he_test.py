@@ -1,7 +1,7 @@
 import numpy as np
 
-import he
-import key_util
+from fl_dp import he
+from fl_dp import key_util
 
 
 def main():
