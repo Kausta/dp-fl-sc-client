@@ -1,13 +1,12 @@
 import os
-
+import random
 import torch
 import torchvision
+
 from fl_dp.models import MnistMLP
 from fl_dp.strategies import LaplaceDpFed
 from fl_dp.train import DpFedStep, LaplaceMechanismStep
-
 from pairwise_noises import PairwiseNoises
-import random
 
 
 class FedClient:
@@ -55,8 +54,8 @@ class FedClient:
         args = self.public_params
         # We assume each client has 1000 data points, for now!
         total_weight = self.local_weight * args["system_size"]
-        self.train_loader = torch.utils.data.DataLoader(self.dataset, batch_size= args['batch_size'], shuffle=True)
-        self.test_loader = torch.utils.data.DataLoader(self.test_set, batch_size= args['batch_size'], shuffle=True)
+        self.train_loader = torch.utils.data.DataLoader(self.dataset, batch_size=args['batch_size'], shuffle=True)
+        self.test_loader = torch.utils.data.DataLoader(self.test_set, batch_size=args['batch_size'], shuffle=True)
         model = MnistMLP(self.device)
         trainer = DpFedStep(model, self.train_loader, self.test_loader, args['lr'], args['S'])
         laplace_step = LaplaceMechanismStep(args['S'] / total_weight, args['epsilon'])

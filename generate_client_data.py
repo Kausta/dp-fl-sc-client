@@ -1,9 +1,8 @@
 import argparse
+import numpy as np
 import os
-
 import torch
 import torchvision
-import numpy as np
 
 
 def load_mnist(datadir):

@@ -1,4 +1,5 @@
 import threading
+from functools import reduce
 
 from protocol import communication_pb2 as pb2
 from protocol import communication_pb2_grpc as grpc
@@ -21,6 +22,27 @@ class RpcServer(grpc.ServerServicer):
                 method=self.server.method
             )
 
+    def GetSystemSize(self, request, context):
+        return pb2.SystemSizeResponse(system_size=self.server.system_size)
+
+    def ForwardNoiseContributions(self, request_iterator, context):
+        # Collect the noise contributions.
+        contributions = list(map(lambda noise_cont: {'contributor': noise_cont.contributor_id,
+                                                     'target': noise_cont.target_id,
+                                                     'contribution': noise_cont.contribution},
+                                 request_iterator))
+        contributor_id = contributions[0]['contributor']
+        self.server.add_noise_contributions(contributor_id, contributions)
+        self.server.noise_contributions_event.wait()
+        with self.server.lock:
+            # Flat map
+            it = filter(lambda c: c['target'] == contributor_id,
+                        reduce(list.__add__, self.server.noise_contributions.values()))
+            for nc in it:
+                yield pb2.NoiseContribution(contributor_id=nc['contributor'],
+                                            target_id=nc['target'],
+                                            contribution=nc['contribution'])
+
     def ShouldContribute(self, request, context):
         self.server.add_should_contribute(request.client_id, request.last_acc)
         self.server.should_contribute_event.wait()
@@ -36,6 +58,7 @@ class RpcServer(grpc.ServerServicer):
         return pb2.Ack(result=committed)
 
     def GetGlobalUpdate(self, request, context):
+        self.server.add_wait_global_update()
         self.server.get_global_update_event.wait()
         with self.server.lock:
             yield serialize_np(self.server.update)

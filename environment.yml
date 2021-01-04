@@ -56,9 +56,9 @@ dependencies:
   - zlib=1.2.11=h62dcd97_4
   - zstd=1.4.5=h04227a9_0
   - pip:
-    - grpcio==1.34.0
-    - grpcio-tools==1.34.0
-    - pandasql==0.7.3
-    - protobuf==3.14.0
-    - sqlalchemy==1.3.20
+      - grpcio==1.34.0
+      - grpcio-tools==1.34.0
+      - pandasql==0.7.3
+      - protobuf==3.14.0
+      - sqlalchemy==1.3.20
 prefix: C:\Users\info\anaconda3\envs\comp430

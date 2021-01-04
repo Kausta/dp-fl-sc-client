@@ -1,15 +1,13 @@
+import argparse
+import grpc
 import os
+from concurrent import futures
 from threading import Thread
 
 import config
 from fl_dp.models import MnistMLP
 from protocol import communication_pb2_grpc
 from protocol import rpc_server
-
-from concurrent import futures
-import grpc
-
-import argparse
 
 server_menu = "\n(s)how the clients\n(r)un\n(q)uit"
 
@@ -19,7 +17,7 @@ def parse_server_args():
     parser.add_argument("--port", type=int, default=8000, help="Listening port for the server.")
     parser.add_argument('-m', '--method', default="dpfed", type=str)
     args = parser.parse_args()
-    if args.method not in ('dpfed', 'he', 'paillier'):
+    if args.method not in ('dpfed', 'he', 'paillier', 'mpc'):
         parser.error(f"Incorrect strategy {args.method}")
     return args.port, args.method
 
@@ -38,11 +36,14 @@ def serve_server():
     print("Server - Listening on", server_port)
 
     user_input = ""
+    show_menu = True
     while user_input != "q":
-        print(server_menu)
+        if show_menu:
+            print(server_menu)
         user_input = input("Choose an option:")
         if user_input == "r":
             Thread(target=lambda: server.run()).start()
+            show_menu = False
         elif user_input == "s":
             print(", ".join(map(str, server.client_list)))
     os._exit(0)

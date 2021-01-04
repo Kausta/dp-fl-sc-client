@@ -1,10 +1,10 @@
-from smpc_server import Server
+import argparse
+import grpc
+from concurrent import futures
+
 from communication import communication_pb2_grpc
 from communication import rpc_server
-
-from concurrent import futures
-import grpc
-import argparse
+from smpc_server import Server
 
 
 def parse_server_args():

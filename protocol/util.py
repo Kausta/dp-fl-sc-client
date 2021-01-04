@@ -1,5 +1,6 @@
 import io
 import numpy as np
+
 from protocol import communication_pb2 as pb2
 
 

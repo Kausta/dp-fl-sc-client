@@ -1,8 +1,9 @@
-from smpc_client import Client
-from communication import communication_pb2_grpc, rpc_client
-from concurrent import futures
-import grpc
 import argparse
+import grpc
+from concurrent import futures
+
+from communication import communication_pb2_grpc, rpc_client
+from smpc_client import Client
 
 
 def parse_client_args():

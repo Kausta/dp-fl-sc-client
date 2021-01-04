@@ -1,7 +1,8 @@
 import grpc
+
+import smpc_fedserver
 from communication import communication_pb2, helpers
 from communication import communication_pb2_grpc
-import smpc_fedserver
 
 server_menu = "\n(s)how the clients\n(i)nitialize\n(se)tup\n(r)un\n(q)uit"
 

@@ -1,9 +1,8 @@
 import argparse
+import numpy as np
 import os
-
 import torch
 import torchvision
-import numpy as np
 
 from fl_dp import key_util
 from fl_dp.he import HEEncryptStep, HEDecryptStep

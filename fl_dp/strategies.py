@@ -3,6 +3,7 @@ import abc
 from fl_dp.he import HEEncryptStep, HEDecryptStep
 from fl_dp.paillier import PaillierEncryptStep, PaillierDecryptStep
 from fl_dp.train import DpFedStep, LaplaceMechanismStep
+from mpc.mpc_step import MPCEncryptStep
 
 
 class Strategy(abc.ABC):
@@ -85,6 +86,35 @@ class PaillierLaplaceDpFed(Strategy):
     def apply_update(self, update):
         update = self.paillier_decrypt_step.decrypt(update)
         self.dp_fed_step.update(update)
+
+    def test(self):
+        return self.dp_fed_step.test()
+
+
+class MPCLaplaceDpFed(Strategy):
+    def __init__(self, dp_fed_step: DpFedStep, laplace_step: LaplaceMechanismStep, mpc_encrypt_step: MPCEncryptStep):
+        self.dp_fed_step = dp_fed_step
+        self.laplace_step = laplace_step
+        self.mpc_encrypt_step = mpc_encrypt_step
+        self.system_size = 0
+
+    def initialize(self, init_params):
+        self.dp_fed_step.init(init_params)
+
+    def set_system_size(self, system_size):
+        self.system_size = system_size
+
+    def calculate_update(self, epochs):
+        update = self.dp_fed_step.train(epochs)
+        update = self.laplace_step.add_noise(update)
+        update = self.mpc_encrypt_step.encrypt(update)
+        # Update the noises.
+        self.mpc_encrypt_step.pn.update_noises()
+        return update
+
+    def apply_update(self, update):
+        dec_update = self.mpc_encrypt_step.decrypt_global_update(update, self.system_size)
+        self.dp_fed_step.update(dec_update)
 
     def test(self):
         return self.dp_fed_step.test()

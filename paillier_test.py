@@ -1,7 +1,7 @@
 import numpy as np
 
-from fl_dp import paillier
 from fl_dp import key_util
+from fl_dp import paillier
 
 
 def main():
@@ -18,7 +18,7 @@ def main():
         print("Dec:", dec_x)
         print("========")
 
-    test_singular([0] * 10000)
+    test_singular([0] * 1000)
     test_singular([1])
     test_singular([-1])
     test_singular([0.5])
