@@ -1,7 +1,7 @@
 import numpy as np
 
 # Encryption from "Towards Efficient and Privacy-preserving Federated Deep Learning"
-from key_util import PrivateKey
+from fl_dp.key_util import PrivateKey
 
 
 class HEEncryptStep:
@@ -24,11 +24,11 @@ class HEEncryptStep:
 
         g_mu_p = update % self.p
         g_mu_q = update % self.q
-        #print((self.q_q_inv * modular_pow(g_mu_p, self.p, self.N)) % self.N - (self.q_q_inv * g_mu_p) % self.N)
-        #print((self.p_p_inv * modular_pow(g_mu_q, self.q, self.N)) % self.N)
-        #print(((self.q_q_inv * modular_pow(g_mu_p, self.p, self.N)) % self.N + (
+        # print((self.q_q_inv * modular_pow(g_mu_p, self.p, self.N)) % self.N - (self.q_q_inv * g_mu_p) % self.N)
+        # print((self.p_p_inv * modular_pow(g_mu_q, self.q, self.N)) % self.N)
+        # print(((self.q_q_inv * modular_pow(g_mu_p, self.p, self.N)) % self.N + (
         #            self.p_p_inv * modular_pow(g_mu_q, self.q, self.N)) % self.N) % self.N)
-        #c_mu = ((self.q_q_inv * modular_pow(g_mu_p, self.p, self.N)) % self.N +
+        # c_mu = ((self.q_q_inv * modular_pow(g_mu_p, self.p, self.N)) % self.N +
         #        (self.p_p_inv * modular_pow(g_mu_q, self.q, self.N)) % self.N) % self.N
         c_mu = ((self.q_q_inv * g_mu_p) % self.N +
                 (self.p_p_inv * g_mu_q) % self.N) % self.N
