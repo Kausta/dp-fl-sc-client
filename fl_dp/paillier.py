@@ -10,12 +10,12 @@ class PaillierEncryptStep:
         self.factor_exp = factor_exp
 
         self.public_key = tp.PaillierPublicKey(pk.N)
+        self.noise_gen = tp.NoiseGenerator(self.public_key)
 
     def encrypt(self, update):
         update = self.weight * update
         update = (update * (10 ** self.factor_exp)).astype(np.int64)
-        r_to_n_val = self.public_key.get_random_r_to_n()
-        return np.array([self.public_key.encrypt(x, r_to_n_val) for x in update])
+        return np.array([self.public_key.encrypt(x, self.noise_gen) for x in update])
 
 
 class PaillierDecryptStep:

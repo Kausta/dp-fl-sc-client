@@ -106,7 +106,6 @@ class Server:
                 elif self.method == "tp":
                     self.update = self.average_tp()
                 self.update_timer.stop()
-                print(self.update_timer)
             self.update_list = []
             self.updates = []
             if self.method == "tp":
@@ -126,9 +125,12 @@ class Server:
                         self.cv.wait()
                 print("Combining...")
                 with self.lock:
+                    self.update_timer.start()
                     self.combine_partials_tp()
+                    self.update_timer.stop()
                 self.tp_decryptors = []
                 self.tp_decryptions = []
+            print(self.update_timer)
             # Wait for all the clients to request the global model.
             print("Waiting to distribute the global model...")
             with self.cv:
@@ -212,9 +214,12 @@ class Server:
             return False
 
     def combine_partials_tp(self):
+        lds = None
         for i in range(len(self.update)):
             shrs = list([decryption[i] for decryption in self.tp_decryptions])
-            self.update[i] = self.tp_pub_key.combinePartials(shrs)
+            if lds is None:
+                lds = self.tp_pub_key.calculateCombinePartialsLds(shrs)
+            self.update[i] = self.tp_pub_key.combinePartials(shrs, lds)
 
 
 class Event:

@@ -29,6 +29,11 @@ class HEEncryptStep:
         #            self.p_p_inv * modular_pow(g_mu_q, self.q, self.N)) % self.N) % self.N)
         # Bottom two equations are mathematically equivalent, also results are always equivalent with both
         # However, the second one is computationally much less expensive
+        # (Equivalence follows from p^-1 p = 1 mod q, q^-1 q = 1 mod p,
+        #   g_mu_p ^ p = g_mu_p mod p, g_mu_q ^q = g_mu_q mod q,
+        #   getting C = g_mu_p mod p, C = g_mu_q mod q, then applying CRT to get
+        #   C = q^-1 q g_mu_p + p^-1 p g_mu_q mod (N=pq) )
+        # They also provide equal results in practice, which can be tried with smaller vectors
         # c_mu = ((self.q_q_inv * modular_pow(g_mu_p, self.p, self.N)) % self.N +
         #         (self.p_p_inv * modular_pow(g_mu_q, self.q, self.N)) % self.N) % self.N
         c_mu = ((self.q_q_inv * g_mu_p) % self.N +

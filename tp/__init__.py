@@ -2,13 +2,20 @@ import math
 import pickle
 import random
 
+import numpy as np
 import sympy
 from phe import paillier
 from phe.util import powmod, invert
 
-
-# Based on the Original Paillier paper Threshold Paillier paper,
-# python phe paillier library and the website https://coderzcolumn.com/tutorials/python/threshold-paillier
+# The following is a modified version of combination of the python phe paillier library and
+#    the implementation https://coderzcolumn.com/tutorials/python/threshold-paillier
+# with modifications based on the following papers:
+# Paillier
+#   Public-Key Cryptosystems Based on CompositeDegree Residuosity Classes
+# Damgard and Jurik
+#   A Generalisation, a Simplification and Some Applications of Paillier's Probabilistic Public-Key System.
+# Jost et al.
+#   Encryption Performance Improvements of the Paillier Cryptosystem
 
 
 class ThresholdPaillier(object):
@@ -60,6 +67,24 @@ class ThresholdPaillier(object):
                                                   self.delta, self.combineSharesConstant)
 
 
+class NoiseGenerator:
+    def __init__(self, pub_key, size=16):
+        self.size = 2 ** size
+        self.noise = 5
+        self.n = pub_key.n
+        self.nsquare = pub_key.nsquare
+        self.precomputed = []
+        print("Precomputing random noises")
+        for i in range(self.size):
+            self.precomputed.append(pub_key.get_random_r_to_n())
+
+    def get_noise_to_n(self):
+        r = np.random.randint(0, self.size, self.noise)
+        n = 1
+        for i in r:
+            n = (n*self.precomputed[i]) % self.nsquare
+        return n
+
 class PartialShare(object):
     def __init__(self, share, server_id):
         self.share = share
@@ -80,7 +105,7 @@ class PaillierPublicKey(object):
     def get_random_r_to_n(self):
         return powmod(self.get_random_lt_n(), self.n, self.nsquare)
 
-    def encrypt(self, plaintext, r_to_n_value=None):
+    def encrypt(self, plaintext, noise_gen=None):
         if self.n - self.max_int <= plaintext < self.n:
             # Very large plaintext, take a sneaky shortcut using inverses
             neg_plaintext = self.n - plaintext  # = abs(plaintext - nsquare)
@@ -91,7 +116,7 @@ class PaillierPublicKey(object):
             # (n+1)^plaintext = n*plaintext + 1 mod n^2
             nude_ciphertext = (self.n * plaintext + 1) % self.nsquare
 
-        obfuscator = r_to_n_value or self.get_random_r_to_n()
+        obfuscator = noise_gen.get_noise_to_n() if noise_gen else self.get_random_r_to_n()
 
         c = (nude_ciphertext * obfuscator) % self.nsquare
         return EncryptedNumber(c, self.nsquare, self.n)
@@ -110,17 +135,22 @@ class ThresholdPaillierPublicKey(object):
 
         self.max_int = n // 3 - 1
 
-    def get_random_lt_n(self):
-        return self.pub.get_random_lt_n()
+    def encrypt(self, plaintext, noise_gen=None):
+        return self.pub.encrypt(plaintext, noise_gen)
 
-    def get_random_r_to_n(self):
-        return self.pub.get_random_r_to_n()
+    def calculateCombinePartialsLds(self, shrs):
+        lds = []
+        for i in range(self.w):
+            ld = self.delta
+            for iprime in range(self.w):
+                if i != iprime:
+                    if shrs[i].server_id != shrs[iprime].server_id:
+                        ld = (ld * -shrs[iprime].server_id) // (shrs[i].server_id - shrs[iprime].server_id)
+            lds.append(ld)
+        return lds
 
-    def encrypt(self, plaintext, r_to_n_value=None):
-        return self.pub.encrypt(plaintext, r_to_n_value)
-
-    def combinePartials(self, shrs):
-        result = combineShares(shrs, self.w, self.delta, self.combineSharesConstant, self.nSquare, self.n)
+    def combinePartials(self, shrs, lds):
+        result = combineShares(shrs, self.w, self.delta, self.combineSharesConstant, self.nSquare, self.n, lds)
         return result - self.n if result >= (self.n - self.max_int) else result
 
 
@@ -178,8 +208,10 @@ class ThresholdPaillierPrivateKey(object):
         self.delta = delta
         self.nSquare = n_square
 
+        self.power = self.si * 2 * self.delta
+
     def partialDecrypt(self, c):
-        return PartialShare(powmod(c.c, self.si * 2 * self.delta, self.nSquare), self.server_id)
+        return PartialShare(powmod(c.c, self.power, self.nSquare), self.server_id)
 
 
 def write_key(key, file):
@@ -207,14 +239,10 @@ class EncryptedNumber(object):
         return self.__add__(other)
 
 
-def combineShares(shrs, w, delta, combineSharesConstant, nSquare, n):
+def combineShares(shrs, w, delta, combineSharesConstant, nSquare, n, lds):
     cprime = 1
     for i in range(w):
-        ld = delta
-        for iprime in range(w):
-            if i != iprime:
-                if shrs[i].server_id != shrs[iprime].server_id:
-                    ld = (ld * -shrs[iprime].server_id) // (shrs[i].server_id - shrs[iprime].server_id)
+        ld = lds[i]
         shr = sympy.mod_inverse(shrs[i].share, nSquare) if ld < 0 else shrs[i].share
         ld = -1 * ld if ld < 1 else ld
         temp = powmod(shr, 2 * ld, nSquare)

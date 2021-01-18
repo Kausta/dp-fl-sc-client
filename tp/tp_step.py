@@ -1,6 +1,6 @@
 import numpy as np
 
-from . import ThresholdPaillierPublicKey
+from . import ThresholdPaillierPublicKey, NoiseGenerator
 
 
 class TPEncryptStep:
@@ -10,11 +10,12 @@ class TPEncryptStep:
         self.total_weight = total_weight
         self.public_key = public_key
 
+        self.noise_gen = NoiseGenerator(self.public_key.pub, 16)
+
     def encrypt(self, update):
         update = self.weight * update
         update = (update * (10 ** self.factor_exp)).astype(np.int64)
-        r_to_n_val = self.public_key.get_random_r_to_n()
-        return np.array([self.public_key.encrypt(x, r_to_n_val) for x in update])
+        return np.array([self.public_key.encrypt(x, self.noise_gen) for x in update])
 
     def decrypt_global_update(self, update):
         return (update.astype(np.float64) / (10 ** self.factor_exp)) / self.total_weight
