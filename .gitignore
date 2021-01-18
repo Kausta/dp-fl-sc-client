@@ -1,4 +1,6 @@
 data/
+test_key.pem
+tp_key*.pkl
 
 # Created by https://www.toptal.com/developers/gitignore/api/pycharm,visualstudio,windows,linux,macos
 # Edit at https://www.toptal.com/developers/gitignore?templates=pycharm,visualstudio,windows,linux,macos

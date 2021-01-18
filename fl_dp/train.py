@@ -1,5 +1,6 @@
-import numpy as np
 import time
+
+import numpy as np
 import torch
 
 from fl_dp.dpfed_model import DpFedModel

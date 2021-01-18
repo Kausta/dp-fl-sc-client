@@ -1,11 +1,20 @@
-import numpy as np
+import os
+import random
 import threading
+
+import numpy as np
+import helper
+import tp
 
 
 def choose_randomly(arr, p):
     for elem in arr:
         if np.random.random_sample() <= p:
             yield elem
+
+
+def choose_n(arr, n):
+    return random.sample(arr, n)
 
 
 class Server:
@@ -23,7 +32,7 @@ class Server:
         self.should_contribute_list = []
         self.contributors = []
         self.last_accs = []
-        self.finished = False
+        self.accs = []
 
         self.update_list = []
         self.updates = []
@@ -37,6 +46,14 @@ class Server:
         self.noise_contributions_event = Event()
         self.should_contribute_event = Event()
         self.get_global_update_event = Event()
+
+        self.tp_pub_key = None
+        self.tp_should_decrypt_list = []
+        self.tp_decryptors = []
+        self.tp_should_decrypt_event = Event()
+        self.tp_decryptions = []
+
+        self.update_timer = helper.Timer('Update')
 
     def run(self):
         with self.lock:
@@ -54,42 +71,64 @@ class Server:
                     self.cv.wait()
             print("Server has received all the noise contributions.")
             self.noise_contributions_event.notify()
-        round = 1
-        while True:
+        elif self.method == "tp":
+            self.tp_pub_key = tp.read_key("tp_key_pub.pkl")
+        for round in range(self.args['global_epochs']):
+            round += 1
             print("Waiting for all the clients to request round " + str(round) + "...")
             with self.cv:
                 while len(self.should_contribute_list) != len(self.client_list):
                     self.cv.wait()
             with self.lock:
                 acc = np.mean(self.last_accs)
+                self.accs.append(acc)
                 print("Round accuracy: {accuracy:.4f}%".format(accuracy=100 * acc))
-                if acc > self.args['target_acc']:
-                    self.finished = True
-                else:
-                    self.contributors = list(choose_randomly(self.should_contribute_list, self.args['q']))
-                    print(f"Chosen clients for round: [{', '.join([str(x) for x in self.contributors])}]")
-                    self.should_contribute_list = []
-                    self.last_accs = []
+                self.contributors = list(choose_randomly(self.should_contribute_list, self.args['q']))
+                print(f"Chosen clients for round: [{', '.join([str(x) for x in self.contributors])}]")
+                self.should_contribute_list = []
+                self.last_accs = []
             self.should_contribute_event.notify()
-            if self.finished:
-                print("Target accuracy reached")
-                break
             print("Waiting for round", round, "contributions from the chosen clients...")
             with self.cv:
                 while len(self.update_list) != len(self.contributors):
                     self.cv.wait()
             print("Aggregating...")
             with self.lock:
+                self.update_timer.start()
                 if self.method == "dpfed":
                     self.update = self.average_dpfed()
                 elif self.method == "he":
                     self.update = self.average_he()
                 elif self.method == "paillier":
-                    self.update = self.average_dpfed()
+                    self.update = self.average_tp()
                 elif self.method == "mpc":
                     self.update = self.average_mpc()
+                elif self.method == "tp":
+                    self.update = self.average_tp()
+                self.update_timer.stop()
+                print(self.update_timer)
             self.update_list = []
             self.updates = []
+            if self.method == "tp":
+                with self.cv:
+                    while len(self.tp_should_decrypt_list) != len(self.client_list):
+                        self.cv.wait()
+                with self.lock:
+                    self.tp_decryptors = list(choose_n(self.tp_should_decrypt_list, self.tp_pub_key.w))
+                    print(f"Chosen clients for decryption: [{', '.join([str(x) for x in self.tp_decryptors])}]")
+                    self.tp_should_decrypt_list = []
+                    self.last_accs = []
+                self.tp_should_decrypt_event.notify()
+                print("Waiting for decryptions from the chosen clients...")
+                with self.cv:
+                    while len(self.tp_decryptions) != len(self.tp_decryptors):
+                        print(len(self.tp_decryptions))
+                        self.cv.wait()
+                print("Combining...")
+                with self.lock:
+                    self.combine_partials_tp()
+                self.tp_decryptors = []
+                self.tp_decryptions = []
             # Wait for all the clients to request the global model.
             print("Waiting to distribute the global model...")
             with self.cv:
@@ -98,7 +137,8 @@ class Server:
             self.get_global_update_event.notify()
             self.contributors = []
             self.global_update_waiting_clients = 0
-            round += 1
+        print('Accuracies (for last round, check a client):', self.accs)
+        print('Finished, press q to exit')
 
     def add_client(self, client_id, client_data_points):
         with self.lock:
@@ -149,6 +189,32 @@ class Server:
         for local_update in self.updates:
             update = (update + local_update)
         return update
+
+    def average_tp(self):
+        it = iter(self.updates)
+        update = next(it)
+        for local_update in it:
+            update = (update + local_update)
+        return update
+
+    def add_should_decrypt(self, client_id):
+        with self.lock, self.cv:
+            self.tp_should_decrypt_list.append(client_id)
+            self.cv.notify()
+
+    def add_tp_decryption(self, client_id, update):
+        print(client_id, "adding decryption...")
+        with self.lock, self.cv:
+            if client_id in self.tp_decryptors:
+                self.tp_decryptions.append(update)
+                self.cv.notify()
+                return True
+            return False
+
+    def combine_partials_tp(self):
+        for i in range(len(self.update)):
+            shrs = list([decryption[i] for decryption in self.tp_decryptions])
+            self.update[i] = self.tp_pub_key.combinePartials(shrs)
 
 
 class Event:

@@ -6,6 +6,8 @@ service Server {
   rpc ForwardNoiseContributions(stream NoiseContribution) returns (stream NoiseContribution) {}
   rpc ShouldContribute(ShouldContributeRequest) returns (stream ShouldContributeResponse) {}
   rpc CommitUpdate(CommitUpdateRequest) returns (Ack) {}
+  rpc TpShouldPartialDecrypt(ShouldDecryptRequest) returns (stream ShouldDecryptResponse) {}
+  rpc TpPartialDecrypt(CommitUpdateRequest) returns (Ack) {}
   rpc GetGlobalUpdate(VoidMsg) returns (stream Model) {}
 }
 
@@ -37,7 +39,13 @@ message ShouldContributeRequest {
 }
 message ShouldContributeResponse {
   bool contribute = 1;
-  bool finished = 2;
+}
+message ShouldDecryptRequest {
+  int32 client_id = 1;
+}
+message ShouldDecryptResponse {
+  bool contribute = 1;
+  Model model = 2;
 }
 
 message CommitUpdateRequest {

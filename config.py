@@ -11,8 +11,8 @@ def get_config():
         'S': 1,  # Sensitivity constant from DP-FedAvg
         'epsilon': 1,  # Epsilon required for epsilon-differential privacy
         'batch_size': 100,  # Local batch sizes
-        'local_epochs': 1,  # Local epochs per round
-        'target_acc': 0.70,
+        'local_epochs': 5,  # Local epochs per round
+        'global_epochs': 10,  # Number of global epochs
         'q': 1  # Fraction of clients joining in any round, 0 < q <= 1,
         #   indicates probability of a client participating to a round
     }

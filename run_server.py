@@ -3,7 +3,7 @@ import grpc
 import os
 from concurrent import futures
 from threading import Thread
-
+import torch
 import config
 from fl_dp.models import MnistMLP
 from protocol import communication_pb2_grpc
@@ -17,7 +17,7 @@ def parse_server_args():
     parser.add_argument("--port", type=int, default=8000, help="Listening port for the server.")
     parser.add_argument('-m', '--method', default="dpfed", type=str)
     args = parser.parse_args()
-    if args.method not in ('dpfed', 'he', 'paillier', 'mpc'):
+    if args.method not in ('dpfed', 'he', 'paillier', 'mpc', 'tp'):
         parser.error(f"Incorrect strategy {args.method}")
     return args.port, args.method
 
@@ -27,6 +27,7 @@ def serve_server():
     print("Using method", method)
 
     args = config.get_config()
+    torch.manual_seed(42)
     initial_model = MnistMLP()
     server = rpc_server.Server(initial_model.flatten(), args, method)
     s = grpc.server(futures.ThreadPoolExecutor(max_workers=10), options=config.grpc_options())

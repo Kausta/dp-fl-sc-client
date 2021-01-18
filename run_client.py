@@ -1,19 +1,23 @@
 import argparse
-import grpc
 import os
+
+import grpc
+import numpy as np
 import torch
-from time import time
 
 import config
+import tp
+import helper
 from fl_dp import key_util
 from fl_dp.he import HEEncryptStep, HEDecryptStep
 from fl_dp.models import MnistMLP
 from fl_dp.paillier import PaillierEncryptStep, PaillierDecryptStep
-from fl_dp.strategies import LaplaceDpFed, HELaplaceDpFed, PaillierLaplaceDpFed, MPCLaplaceDpFed
+from fl_dp.strategies import LaplaceDpFed, HELaplaceDpFed, PaillierLaplaceDpFed, MPCLaplaceDpFed, TPLaplaceDpFed
 from fl_dp.train import DpFedStep, LaplaceMechanismStep
 from mpc.mpc_step import MPCEncryptStep
 from mpc.pairwise_noises import PairwiseNoises
 from protocol import communication_pb2_grpc, communication_pb2 as pb2, util
+from tp.tp_step import TPEncryptStep
 
 
 def parse_client_args():
@@ -27,7 +31,8 @@ def parse_client_args():
 def create_dpfed(loader, test_loader, args, total_weight, device):
     model = MnistMLP(device)
     trainer = DpFedStep(model, loader, test_loader, args['lr'], args['S'])
-    laplace_step = LaplaceMechanismStep(args['S'] / (args['q'] * total_weight), args['epsilon'])
+    laplace_step = LaplaceMechanismStep(args['S'] / (len(loader)),
+                                        (args['epsilon'] / args['global_epochs']))
     strategy = LaplaceDpFed(trainer, laplace_step)
     return strategy
 
@@ -35,29 +40,45 @@ def create_dpfed(loader, test_loader, args, total_weight, device):
 def create_he(loader, test_loader, args, weight, total_weight, device, private_key, factor_exp):
     model = MnistMLP(device)
     trainer = DpFedStep(model, loader, test_loader, args['lr'], args['S'])
-    laplace_step = LaplaceMechanismStep(args['S'] / (args['q'] * total_weight), args['epsilon'])
+    laplace_step = LaplaceMechanismStep(args['S'] / (len(loader)),
+                                        (args['epsilon'] / args['global_epochs']))
     he_encrypt = HEEncryptStep(private_key, factor_exp, weight)
     he_decrypt = HEDecryptStep(private_key, factor_exp, args['q'] * total_weight)
     strategy = HELaplaceDpFed(trainer, laplace_step, he_encrypt, he_decrypt)
     return strategy
 
 
-def create_paillier(loader, test_loader, args, total_weight, device, public_key, private_key):
+def create_paillier(loader, test_loader, args, weight, total_weight, device, factor_exp, public_key, private_key):
     model = MnistMLP(device)
     trainer = DpFedStep(model, loader, test_loader, args['lr'], args['S'])
-    laplace_step = LaplaceMechanismStep(args['S'] / (args['q'] * total_weight), args['epsilon'])
-    paillier_encrypt = PaillierEncryptStep(public_key)
-    paillier_decrypt = PaillierDecryptStep(private_key)
+    laplace_step = LaplaceMechanismStep(args['S'] / (len(loader)),
+                                        (args['epsilon'] / args['global_epochs']))
+    paillier_encrypt = PaillierEncryptStep(public_key, factor_exp, weight)
+    paillier_decrypt = PaillierDecryptStep(private_key, factor_exp, total_weight)
     strategy = PaillierLaplaceDpFed(trainer, laplace_step, paillier_encrypt, paillier_decrypt)
     return strategy
 
 
-def create_smp(loader, test_loader, args, weight, total_weight, device, factor_exp, client_id):
+def create_smp(loader, test_loader, args, weight, total_weight, device, factor_exp, client_id, system_size, pn):
     model = MnistMLP(device)
     trainer = DpFedStep(model, loader, test_loader, args['lr'], args['S'])
-    laplace_step = LaplaceMechanismStep(args['S'] / (args['q'] * total_weight), args['epsilon'])
+    laplace_step = LaplaceMechanismStep(args['S'] / (len(loader) * system_size),
+                                        (args['epsilon'] / args['global_epochs']))
     mpc_encrypt_step = MPCEncryptStep(factor_exp, weight, total_weight, client_id)
+    mpc_encrypt_step.set_pairwise_noise_generator(pn)
     strategy = MPCLaplaceDpFed(trainer, laplace_step, mpc_encrypt_step)
+    strategy.set_system_size(system_size)
+    return strategy
+
+
+def create_tp(loader, test_loader, args, weight, total_weight, device, factor_exp, tp_pub_key):
+    model = MnistMLP(device)
+    trainer = DpFedStep(model, loader, test_loader, args['lr'], args['S'])
+    noise_factor = np.sqrt(tp_pub_key.l - tp_pub_key.w)
+    laplace_step = LaplaceMechanismStep(args['S'] / (len(loader) * noise_factor),
+                                        (args['epsilon'] / args['global_epochs']))
+    mpc_encrypt_step = TPEncryptStep(factor_exp, weight, total_weight, tp_pub_key)
+    strategy = TPLaplaceDpFed(trainer, laplace_step, mpc_encrypt_step)
     return strategy
 
 
@@ -83,7 +104,8 @@ def serve_client():
     print(init_model)
     print(weight, total_weight)
 
-    # This should work, although my computer with a 1660S wasn't able to train 10 models at the same time
+    # This should work, especially when testing with multiple instances with gpus,
+    # although my computer with a 1660S wasn't able to train 10 models at the same time
     # print("Cuda:", torch.cuda.is_available())
     # if torch.cuda.is_available():
     #    dev = "cuda:0"
@@ -101,21 +123,15 @@ def serve_client():
         strategy = create_he(train_loader, test_loader, args, weight, total_weight, device, private_key,
                              args['factor_exp'])
     elif method == "paillier":
-        strategy = create_paillier(train_loader, test_loader, args, total_weight, device, public_key, private_key)
+        strategy = create_paillier(train_loader, test_loader, args, weight, total_weight, device, args['factor_exp'],
+                                   public_key, private_key)
 
     elif method == "mpc":
-        strategy = create_smp(train_loader, test_loader, args, weight, total_weight, device, args['factor_exp'],
-                              client_id)
-    else:
-        return
-
-    # Construct the pairwise noises
-    if method == "mpc":
+        # Construct the pairwise noises
         # First, receive the system size.
         r = server_stub.GetSystemSize(pb2.VoidMsg())
         system_size = r.system_size
         print("Received system size", system_size)
-        strategy.set_system_size(system_size)
         pn = PairwiseNoises()
         print("Generating private keys...")
         # Create a list of all the client ids.
@@ -135,37 +151,69 @@ def serve_client():
             pn.receive_contribution(cont.contributor_id, int(cont.contribution, 16))
         # Initialize PRGs
         pn.initialize_prgs()
-        # Save the pairwise noises to the strategy.
-        strategy.mpc_encrypt_step.set_pairwise_noise_generator(pn)
+        strategy = create_smp(train_loader, test_loader, args, weight, total_weight, device, args['factor_exp'],
+                              client_id, system_size, pn)
+    elif method == "tp":
+        tp_pub_key = tp.read_key('tp_key_pub.pkl')
+        tp_priv_key = tp.read_key(f'tp_key_{client_id}.pkl')
+        strategy = create_tp(train_loader, test_loader, args, weight, total_weight, device, args['factor_exp'],
+                             tp_pub_key)
+    else:
+        return
+
+    timer = helper.Timer('Total')
+    data_sent_cnt = helper.Counter('Data Sent')
+    data_received_cnt = helper.Counter('Data Received')
 
     strategy.initialize(init_model)
     acc = strategy.test()
-    comm_round = 0
-    while True:
-        comm_round += 1
-        print("Round", comm_round)
+    for comm_round in range(args['global_epochs']):
+        print("Round", comm_round + 1)
 
         should_contribute = next(
             server_stub.ShouldContribute(pb2.ShouldContributeRequest(client_id=client_id, last_acc=acc)))
-        if should_contribute.finished:
-            break
         if should_contribute.contribute:
             print("Chosen for training round. Training...")
+            timer.start()
             update = strategy.calculate_update(args['local_epochs'])
+            timer.stop()
             print("Trained. Committing the local encrypted update...")
-            server_stub.CommitUpdate(pb2.CommitUpdateRequest(client_id=client_id, model=util.serialize_np(update)))
+            commit_update_request = pb2.CommitUpdateRequest(client_id=client_id, model=util.serialize_np(update))
+            data_sent_cnt.add(commit_update_request.ByteSize())
+            server_stub.CommitUpdate(commit_update_request)
             print("Committed.")
         else:
             print("Not chosen for round")
 
+        if method == "tp":
+            should_decrypt = next(
+                server_stub.TpShouldPartialDecrypt(pb2.ShouldDecryptRequest(client_id=client_id)))
+            data_received_cnt.add(should_decrypt.ByteSize())
+            if should_decrypt.contribute:
+                print("Choosen for partial decryption")
+                timer.start()
+                model = util.parse_np(should_decrypt.model)
+                for i in range(len(model)):
+                    model[i] = tp_priv_key.partialDecrypt(model[i])
+                timer.stop()
+                print("Decrypted. Committing the partial decryption...")
+                commit_update_request = pb2.CommitUpdateRequest(client_id=client_id, model=util.serialize_np(model))
+                data_sent_cnt.add(commit_update_request.ByteSize())
+                server_stub.TpPartialDecrypt(commit_update_request)
+
         print("Waiting for the global model...")
         update = next(server_stub.GetGlobalUpdate(pb2.VoidMsg()))
+        data_received_cnt.add(update.ByteSize())
         print("Received global model.")
+        timer.start()
         strategy.apply_update(util.parse_np(update))
+        timer.stop()
         print("Testing global model...")
         acc = strategy.test()
 
-    print('Target accuracy', args['target_acc'], 'achieved at round', comm_round)
+        print(timer)
+        print(data_sent_cnt)
+        print(data_received_cnt)
 
 
 if __name__ == "__main__":

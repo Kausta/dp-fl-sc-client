@@ -15,35 +15,45 @@ class ServerStub(object):
             channel: A grpc.Channel.
         """
         self.RegisterClient = channel.unary_stream(
-            '/Server/RegisterClient',
-            request_serializer=protocol_dot_communication__pb2.RegisterRequest.SerializeToString,
-            response_deserializer=protocol_dot_communication__pb2.RegisterResponse.FromString,
-        )
+                '/Server/RegisterClient',
+                request_serializer=protocol_dot_communication__pb2.RegisterRequest.SerializeToString,
+                response_deserializer=protocol_dot_communication__pb2.RegisterResponse.FromString,
+                )
         self.GetSystemSize = channel.unary_unary(
-            '/Server/GetSystemSize',
-            request_serializer=protocol_dot_communication__pb2.VoidMsg.SerializeToString,
-            response_deserializer=protocol_dot_communication__pb2.SystemSizeResponse.FromString,
-        )
+                '/Server/GetSystemSize',
+                request_serializer=protocol_dot_communication__pb2.VoidMsg.SerializeToString,
+                response_deserializer=protocol_dot_communication__pb2.SystemSizeResponse.FromString,
+                )
         self.ForwardNoiseContributions = channel.stream_stream(
-            '/Server/ForwardNoiseContributions',
-            request_serializer=protocol_dot_communication__pb2.NoiseContribution.SerializeToString,
-            response_deserializer=protocol_dot_communication__pb2.NoiseContribution.FromString,
-        )
+                '/Server/ForwardNoiseContributions',
+                request_serializer=protocol_dot_communication__pb2.NoiseContribution.SerializeToString,
+                response_deserializer=protocol_dot_communication__pb2.NoiseContribution.FromString,
+                )
         self.ShouldContribute = channel.unary_stream(
-            '/Server/ShouldContribute',
-            request_serializer=protocol_dot_communication__pb2.ShouldContributeRequest.SerializeToString,
-            response_deserializer=protocol_dot_communication__pb2.ShouldContributeResponse.FromString,
-        )
+                '/Server/ShouldContribute',
+                request_serializer=protocol_dot_communication__pb2.ShouldContributeRequest.SerializeToString,
+                response_deserializer=protocol_dot_communication__pb2.ShouldContributeResponse.FromString,
+                )
         self.CommitUpdate = channel.unary_unary(
-            '/Server/CommitUpdate',
-            request_serializer=protocol_dot_communication__pb2.CommitUpdateRequest.SerializeToString,
-            response_deserializer=protocol_dot_communication__pb2.Ack.FromString,
-        )
+                '/Server/CommitUpdate',
+                request_serializer=protocol_dot_communication__pb2.CommitUpdateRequest.SerializeToString,
+                response_deserializer=protocol_dot_communication__pb2.Ack.FromString,
+                )
+        self.TpShouldPartialDecrypt = channel.unary_stream(
+                '/Server/TpShouldPartialDecrypt',
+                request_serializer=protocol_dot_communication__pb2.ShouldDecryptRequest.SerializeToString,
+                response_deserializer=protocol_dot_communication__pb2.ShouldDecryptResponse.FromString,
+                )
+        self.TpPartialDecrypt = channel.unary_unary(
+                '/Server/TpPartialDecrypt',
+                request_serializer=protocol_dot_communication__pb2.CommitUpdateRequest.SerializeToString,
+                response_deserializer=protocol_dot_communication__pb2.Ack.FromString,
+                )
         self.GetGlobalUpdate = channel.unary_stream(
-            '/Server/GetGlobalUpdate',
-            request_serializer=protocol_dot_communication__pb2.VoidMsg.SerializeToString,
-            response_deserializer=protocol_dot_communication__pb2.Model.FromString,
-        )
+                '/Server/GetGlobalUpdate',
+                request_serializer=protocol_dot_communication__pb2.VoidMsg.SerializeToString,
+                response_deserializer=protocol_dot_communication__pb2.Model.FromString,
+                )
 
 
 class ServerServicer(object):
@@ -79,6 +89,18 @@ class ServerServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def TpShouldPartialDecrypt(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def TpPartialDecrypt(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def GetGlobalUpdate(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -88,148 +110,188 @@ class ServerServicer(object):
 
 def add_ServerServicer_to_server(servicer, server):
     rpc_method_handlers = {
-        'RegisterClient': grpc.unary_stream_rpc_method_handler(
-            servicer.RegisterClient,
-            request_deserializer=protocol_dot_communication__pb2.RegisterRequest.FromString,
-            response_serializer=protocol_dot_communication__pb2.RegisterResponse.SerializeToString,
-        ),
-        'GetSystemSize': grpc.unary_unary_rpc_method_handler(
-            servicer.GetSystemSize,
-            request_deserializer=protocol_dot_communication__pb2.VoidMsg.FromString,
-            response_serializer=protocol_dot_communication__pb2.SystemSizeResponse.SerializeToString,
-        ),
-        'ForwardNoiseContributions': grpc.stream_stream_rpc_method_handler(
-            servicer.ForwardNoiseContributions,
-            request_deserializer=protocol_dot_communication__pb2.NoiseContribution.FromString,
-            response_serializer=protocol_dot_communication__pb2.NoiseContribution.SerializeToString,
-        ),
-        'ShouldContribute': grpc.unary_stream_rpc_method_handler(
-            servicer.ShouldContribute,
-            request_deserializer=protocol_dot_communication__pb2.ShouldContributeRequest.FromString,
-            response_serializer=protocol_dot_communication__pb2.ShouldContributeResponse.SerializeToString,
-        ),
-        'CommitUpdate': grpc.unary_unary_rpc_method_handler(
-            servicer.CommitUpdate,
-            request_deserializer=protocol_dot_communication__pb2.CommitUpdateRequest.FromString,
-            response_serializer=protocol_dot_communication__pb2.Ack.SerializeToString,
-        ),
-        'GetGlobalUpdate': grpc.unary_stream_rpc_method_handler(
-            servicer.GetGlobalUpdate,
-            request_deserializer=protocol_dot_communication__pb2.VoidMsg.FromString,
-            response_serializer=protocol_dot_communication__pb2.Model.SerializeToString,
-        ),
+            'RegisterClient': grpc.unary_stream_rpc_method_handler(
+                    servicer.RegisterClient,
+                    request_deserializer=protocol_dot_communication__pb2.RegisterRequest.FromString,
+                    response_serializer=protocol_dot_communication__pb2.RegisterResponse.SerializeToString,
+            ),
+            'GetSystemSize': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetSystemSize,
+                    request_deserializer=protocol_dot_communication__pb2.VoidMsg.FromString,
+                    response_serializer=protocol_dot_communication__pb2.SystemSizeResponse.SerializeToString,
+            ),
+            'ForwardNoiseContributions': grpc.stream_stream_rpc_method_handler(
+                    servicer.ForwardNoiseContributions,
+                    request_deserializer=protocol_dot_communication__pb2.NoiseContribution.FromString,
+                    response_serializer=protocol_dot_communication__pb2.NoiseContribution.SerializeToString,
+            ),
+            'ShouldContribute': grpc.unary_stream_rpc_method_handler(
+                    servicer.ShouldContribute,
+                    request_deserializer=protocol_dot_communication__pb2.ShouldContributeRequest.FromString,
+                    response_serializer=protocol_dot_communication__pb2.ShouldContributeResponse.SerializeToString,
+            ),
+            'CommitUpdate': grpc.unary_unary_rpc_method_handler(
+                    servicer.CommitUpdate,
+                    request_deserializer=protocol_dot_communication__pb2.CommitUpdateRequest.FromString,
+                    response_serializer=protocol_dot_communication__pb2.Ack.SerializeToString,
+            ),
+            'TpShouldPartialDecrypt': grpc.unary_stream_rpc_method_handler(
+                    servicer.TpShouldPartialDecrypt,
+                    request_deserializer=protocol_dot_communication__pb2.ShouldDecryptRequest.FromString,
+                    response_serializer=protocol_dot_communication__pb2.ShouldDecryptResponse.SerializeToString,
+            ),
+            'TpPartialDecrypt': grpc.unary_unary_rpc_method_handler(
+                    servicer.TpPartialDecrypt,
+                    request_deserializer=protocol_dot_communication__pb2.CommitUpdateRequest.FromString,
+                    response_serializer=protocol_dot_communication__pb2.Ack.SerializeToString,
+            ),
+            'GetGlobalUpdate': grpc.unary_stream_rpc_method_handler(
+                    servicer.GetGlobalUpdate,
+                    request_deserializer=protocol_dot_communication__pb2.VoidMsg.FromString,
+                    response_serializer=protocol_dot_communication__pb2.Model.SerializeToString,
+            ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-        'Server', rpc_method_handlers)
+            'Server', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
 
 
-# This class is part of an EXPERIMENTAL API.
+ # This class is part of an EXPERIMENTAL API.
 class Server(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
     def RegisterClient(request,
-                       target,
-                       options=(),
-                       channel_credentials=None,
-                       call_credentials=None,
-                       insecure=False,
-                       compression=None,
-                       wait_for_ready=None,
-                       timeout=None,
-                       metadata=None):
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
         return grpc.experimental.unary_stream(request, target, '/Server/RegisterClient',
-                                              protocol_dot_communication__pb2.RegisterRequest.SerializeToString,
-                                              protocol_dot_communication__pb2.RegisterResponse.FromString,
-                                              options, channel_credentials,
-                                              insecure, call_credentials, compression, wait_for_ready, timeout,
-                                              metadata)
+            protocol_dot_communication__pb2.RegisterRequest.SerializeToString,
+            protocol_dot_communication__pb2.RegisterResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
     def GetSystemSize(request,
-                      target,
-                      options=(),
-                      channel_credentials=None,
-                      call_credentials=None,
-                      insecure=False,
-                      compression=None,
-                      wait_for_ready=None,
-                      timeout=None,
-                      metadata=None):
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
         return grpc.experimental.unary_unary(request, target, '/Server/GetSystemSize',
-                                             protocol_dot_communication__pb2.VoidMsg.SerializeToString,
-                                             protocol_dot_communication__pb2.SystemSizeResponse.FromString,
-                                             options, channel_credentials,
-                                             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            protocol_dot_communication__pb2.VoidMsg.SerializeToString,
+            protocol_dot_communication__pb2.SystemSizeResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
     def ForwardNoiseContributions(request_iterator,
-                                  target,
-                                  options=(),
-                                  channel_credentials=None,
-                                  call_credentials=None,
-                                  insecure=False,
-                                  compression=None,
-                                  wait_for_ready=None,
-                                  timeout=None,
-                                  metadata=None):
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
         return grpc.experimental.stream_stream(request_iterator, target, '/Server/ForwardNoiseContributions',
-                                               protocol_dot_communication__pb2.NoiseContribution.SerializeToString,
-                                               protocol_dot_communication__pb2.NoiseContribution.FromString,
-                                               options, channel_credentials,
-                                               insecure, call_credentials, compression, wait_for_ready, timeout,
-                                               metadata)
+            protocol_dot_communication__pb2.NoiseContribution.SerializeToString,
+            protocol_dot_communication__pb2.NoiseContribution.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
     def ShouldContribute(request,
-                         target,
-                         options=(),
-                         channel_credentials=None,
-                         call_credentials=None,
-                         insecure=False,
-                         compression=None,
-                         wait_for_ready=None,
-                         timeout=None,
-                         metadata=None):
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
         return grpc.experimental.unary_stream(request, target, '/Server/ShouldContribute',
-                                              protocol_dot_communication__pb2.ShouldContributeRequest.SerializeToString,
-                                              protocol_dot_communication__pb2.ShouldContributeResponse.FromString,
-                                              options, channel_credentials,
-                                              insecure, call_credentials, compression, wait_for_ready, timeout,
-                                              metadata)
+            protocol_dot_communication__pb2.ShouldContributeRequest.SerializeToString,
+            protocol_dot_communication__pb2.ShouldContributeResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
     def CommitUpdate(request,
-                     target,
-                     options=(),
-                     channel_credentials=None,
-                     call_credentials=None,
-                     insecure=False,
-                     compression=None,
-                     wait_for_ready=None,
-                     timeout=None,
-                     metadata=None):
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
         return grpc.experimental.unary_unary(request, target, '/Server/CommitUpdate',
-                                             protocol_dot_communication__pb2.CommitUpdateRequest.SerializeToString,
-                                             protocol_dot_communication__pb2.Ack.FromString,
-                                             options, channel_credentials,
-                                             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            protocol_dot_communication__pb2.CommitUpdateRequest.SerializeToString,
+            protocol_dot_communication__pb2.Ack.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def TpShouldPartialDecrypt(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_stream(request, target, '/Server/TpShouldPartialDecrypt',
+            protocol_dot_communication__pb2.ShouldDecryptRequest.SerializeToString,
+            protocol_dot_communication__pb2.ShouldDecryptResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def TpPartialDecrypt(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/Server/TpPartialDecrypt',
+            protocol_dot_communication__pb2.CommitUpdateRequest.SerializeToString,
+            protocol_dot_communication__pb2.Ack.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
     def GetGlobalUpdate(request,
-                        target,
-                        options=(),
-                        channel_credentials=None,
-                        call_credentials=None,
-                        insecure=False,
-                        compression=None,
-                        wait_for_ready=None,
-                        timeout=None,
-                        metadata=None):
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
         return grpc.experimental.unary_stream(request, target, '/Server/GetGlobalUpdate',
-                                              protocol_dot_communication__pb2.VoidMsg.SerializeToString,
-                                              protocol_dot_communication__pb2.Model.FromString,
-                                              options, channel_credentials,
-                                              insecure, call_credentials, compression, wait_for_ready, timeout,
-                                              metadata)
+            protocol_dot_communication__pb2.VoidMsg.SerializeToString,
+            protocol_dot_communication__pb2.Model.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

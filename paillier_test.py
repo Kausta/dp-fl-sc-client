@@ -6,14 +6,14 @@ from fl_dp import paillier
 
 def main():
     private, public = key_util.read_key('test_key.pem')
-    enc = paillier.PaillierEncryptStep(public)
-    dec = paillier.PaillierDecryptStep(private)
+    enc = paillier.PaillierEncryptStep(public, 8, 1)
+    dec = paillier.PaillierDecryptStep(private, 8, 1)
 
     def test_singular(x):
         x = np.array(x, dtype=np.float64)
         print("Val:", x)
         enc_x = enc.encrypt(x)
-        print("Enc:", enc_x[0].ciphertext())
+        print("Enc:", enc_x[0].c)
         dec_x = dec.decrypt(enc_x)
         print("Dec:", dec_x)
         print("========")

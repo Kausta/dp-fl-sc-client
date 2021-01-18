@@ -4,7 +4,7 @@ from mpc.pyDH import DiffieHellman, primes
 
 
 class PairwiseNoises:
-    noise_range = 10 ** 6
+    noise_range = 10 ** 8
     dh_instances: dict = None
     noise_map: dict = {}
     # Store the contributions that were received before the generation of private keys.

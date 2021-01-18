@@ -23,4 +23,4 @@ class MPCEncryptStep:
         return res
 
     def decrypt_global_update(self, update, system_size):
-        return ((update.astype(np.float128) / (10 ** self.factor_exp)) / self.total_weight).astype(np.float64)
+        return (update.astype(np.float64) / (10 ** self.factor_exp)) / self.total_weight

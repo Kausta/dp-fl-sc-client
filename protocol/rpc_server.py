@@ -1,4 +1,3 @@
-import threading
 from functools import reduce
 
 from protocol import communication_pb2 as pb2
@@ -47,14 +46,22 @@ class RpcServer(grpc.ServerServicer):
         self.server.add_should_contribute(request.client_id, request.last_acc)
         self.server.should_contribute_event.wait()
         with self.server.lock:
-            if self.server.finished:
-                yield pb2.ShouldContributeResponse(contribute=False, finished=True)
-            else:
-                yield pb2.ShouldContributeResponse(contribute=request.client_id in self.server.contributors,
-                                                   finished=False)
+            yield pb2.ShouldContributeResponse(contribute=request.client_id in self.server.contributors)
 
     def CommitUpdate(self, request, context):
         committed = self.server.add_update(request.client_id, parse_np(request.model))
+        return pb2.Ack(result=committed)
+
+    def TpShouldPartialDecrypt(self, request, context):
+        self.server.add_should_decrypt(request.client_id)
+        self.server.tp_should_decrypt_event.wait()
+        with self.server.lock:
+            contribute = request.client_id in self.server.tp_decryptors
+            model = self.server.update if contribute else None
+            yield pb2.ShouldDecryptResponse(contribute=contribute, model=serialize_np(model))
+
+    def TpPartialDecrypt(self, request, context):
+        committed = self.server.add_tp_decryption(request.client_id, parse_np(request.model))
         return pb2.Ack(result=committed)
 
     def GetGlobalUpdate(self, request, context):

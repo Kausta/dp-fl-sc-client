@@ -5,8 +5,8 @@ from Crypto.PublicKey import RSA
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="")
-    parser.add_argument('-p', '--path', default="id_rsa.pem", type=str)
-    parser.add_argument('-s', '--size', default=2048, type=int)
+    parser.add_argument('-p', '--path', default="test_key.pem", type=str)
+    parser.add_argument('-s', '--size', default=1024, type=int)
     args = parser.parse_args()
 
     key = RSA.generate(args.size)
